@@ -59,6 +59,8 @@ function GameForm({ initialGame, submitAction, buttonLabel = "Create" }) {
       const {
         startingBalance,
         cowPrice,
+        purchaseFee,
+        sellingFee,
         milkPrice,
         degradationRate,
         carryingCapacity,
@@ -70,6 +72,8 @@ function GameForm({ initialGame, submitAction, buttonLabel = "Create" }) {
       reset({
         startingBalance,
         cowPrice,
+        purchaseFee,
+        sellingFee,
         milkPrice,
         degradationRate,
         carryingCapacity,
@@ -94,6 +98,8 @@ function GameForm({ initialGame, submitAction, buttonLabel = "Create" }) {
     name: "",
     startingBalance: defaultValuesData?.startingBalance || "10000",
     cowPrice: defaultValuesData?.cowPrice || "100",
+    purchaseFee: defaultValuesData?.purchaseFee ?? 0,
+    sellingFee: defaultValuesData?.sellingFee ?? 0,
     milkPrice: defaultValuesData?.milkPrice || "1",
     degradationRate: defaultValuesData?.degradationRate || 0.001,
     carryingCapacity: defaultValuesData?.carryingCapacity || 100,
@@ -275,6 +281,80 @@ function GameForm({ initialGame, submitAction, buttonLabel = "Create" }) {
           </Form.Group>
         </Col>
       </Row>
+
+      <Row
+        className="flex justify-content-start"
+        style={{ width: "80%" }}
+        data-testid={`${testid}-r2-fees`}
+      >
+  <Col md={6}>
+    <Form.Group className="mb-3">
+      <Form.Label htmlFor="purchaseFee">Purchase Fee</Form.Label>
+      <OverlayTrigger
+        placement="top"
+        overlay={
+          <Tooltip>
+            This is the additional fee charged for each cow when purchasing
+            cows.
+          </Tooltip>
+        }
+        delay="100"
+      >
+        <Form.Control
+          data-testid={`${testid}-purchaseFee`}
+          id="purchaseFee"
+          type="number"
+          step="0.01"
+          defaultValue={DefaultVals.purchaseFee}
+          isInvalid={!!errors.purchaseFee}
+          {...register("purchaseFee", {
+            valueAsNumber: true,
+            required: "Purchase fee is required",
+            min: { value: 0, message: "Purchase fee must be ≥ 0" },
+          })}
+        />
+      </OverlayTrigger>
+
+      <Form.Control.Feedback type="invalid">
+        {errors.purchaseFee?.message}
+      </Form.Control.Feedback>
+    </Form.Group>
+  </Col>
+
+  <Col md={6}>
+    <Form.Group className="mb-3">
+      <Form.Label htmlFor="sellingFee">Selling Fee</Form.Label>
+      <OverlayTrigger
+        placement="top"
+        overlay={
+          <Tooltip>
+            This is the fee deducted from the selling price for each cow
+            when selling cows.
+          </Tooltip>
+        }
+        delay="100"
+      >
+        <Form.Control
+          data-testid={`${testid}-sellingFee`}
+          id="sellingFee"
+          type="number"
+          step="0.01"
+          defaultValue={DefaultVals.sellingFee}
+          isInvalid={!!errors.sellingFee}
+          {...register("sellingFee", {
+            valueAsNumber: true,
+            required: "Selling fee is required",
+            min: { value: 0, message: "Selling fee must be ≥ 0" },
+          })}
+        />
+      </OverlayTrigger>
+
+      <Form.Control.Feedback type="invalid">
+        {errors.sellingFee?.message}
+      </Form.Control.Feedback>
+    </Form.Group>
+  </Col>
+</Row>
 
       <Row
         className="mt-1 flex justify-content-start"
