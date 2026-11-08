@@ -330,12 +330,8 @@ describe("GameForm tests", () => {
     expect(await screen.findByText(/Id/)).toBeInTheDocument();
     expect(screen.getByTestId("GameForm-purchaseFee")).toHaveValue(2);
     expect(screen.getByTestId("GameForm-sellingFee")).toHaveValue(3);
-    expect(screen.getByTestId("GameForm-id")).toHaveValue(
-      `${initialGame.id}`,
-    );
-    expect(screen.getByTestId("GameForm-name")).toHaveValue(
-      initialGame.name,
-    );
+    expect(screen.getByTestId("GameForm-id")).toHaveValue(`${initialGame.id}`);
+    expect(screen.getByTestId("GameForm-name")).toHaveValue(initialGame.name);
     expect(screen.getByTestId("GameForm-startingBalance")).toHaveValue(
       initialGame.startingBalance,
     );
@@ -613,7 +609,7 @@ describe("GameForm tests", () => {
       .onGet("/api/game/all-health-update-strategies")
       .reply(200, healthUpdateStrategyListFixtures.real);
 
-  axiosMock.onGet("/api/game/defaults").reply(200, defaultValuesData);
+    axiosMock.onGet("/api/game/defaults").reply(200, defaultValuesData);
 
     render(
       <QueryClientProvider client={new QueryClient()}>
@@ -622,7 +618,6 @@ describe("GameForm tests", () => {
         </Router>
       </QueryClientProvider>,
     );
-
 
     expect(await screen.findByTestId("GameForm-startingBalance")).toHaveValue(
       defaultValuesData.startingBalance,
