@@ -20,7 +20,6 @@ const ManageCowsModal = ({
     setNumber(e.target.value);
   };
 
-
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -50,7 +49,6 @@ const ManageCowsModal = ({
     onClose(); // Close the modal
   };
 
-
   const handleClose = () => {
     setNumber(1);
     onClose();
@@ -67,7 +65,7 @@ const ManageCowsModal = ({
       onHide={handleClose}
     >
       <Modal.Body>
-      <Form onSubmit={handleSubmit} noValidate>
+        <Form onSubmit={handleSubmit} noValidate>
           <Form.Group
             data-testid={"buy-sell-cow-modal-closeGroup"}
             style={{ display: "flex", justifyContent: "right" }}
