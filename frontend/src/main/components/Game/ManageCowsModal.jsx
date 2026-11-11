@@ -20,22 +20,36 @@ const ManageCowsModal = ({
     setNumber(e.target.value);
   };
 
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (number < 0) {
+
+    // Do not allow negative numbers.
+    if (Number(number) < 0) {
       window.alert(
         `You cannot ${message} a negative number of cows! Please enter a non-negative number.`,
       );
-    } else {
-      if (message.includes("buy")) {
-        onBuy(farmer, number);
-      } else {
-        onSell(farmer, number);
-      }
-      setNumber(1);
-      onClose(); // Close the modal
+      return;
     }
+
+    // Cows must be purchased or sold in whole numbers.
+    if (!Number.isInteger(Number(number))) {
+      window.alert(
+        `You cannot ${message} a fraction of a cow! Please enter a whole number.`,
+      );
+      return;
+    }
+
+    if (message.includes("buy")) {
+      onBuy(farmer, number);
+    } else {
+      onSell(farmer, number);
+    }
+
+    setNumber(1);
+    onClose(); // Close the modal
   };
+
 
   const handleClose = () => {
     setNumber(1);
@@ -53,7 +67,7 @@ const ManageCowsModal = ({
       onHide={handleClose}
     >
       <Modal.Body>
-        <Form onSubmit={handleSubmit}>
+      <Form onSubmit={handleSubmit} noValidate>
           <Form.Group
             data-testid={"buy-sell-cow-modal-closeGroup"}
             style={{ display: "flex", justifyContent: "right" }}
