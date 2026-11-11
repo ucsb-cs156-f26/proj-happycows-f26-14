@@ -21,6 +21,7 @@ import edu.ucsb.cs156.happiercows.repositories.ChatMessageRepository;
 import edu.ucsb.cs156.happiercows.entities.User;
 import edu.ucsb.cs156.happiercows.entities.Farmer;
 import edu.ucsb.cs156.happiercows.repositories.FarmerRepository;
+import edu.ucsb.cs156.happiercows.services.ChatFilterService;
 
 import org.springframework.security.core.Authentication;
 
@@ -38,6 +39,9 @@ public class ChatMessageController extends ApiController{
 
     @Autowired
     private FarmerRepository farmerRepository;
+
+    @Autowired
+    private ChatFilterService chatFilterService;
 
     @Autowired
     ObjectMapper mapper;
@@ -123,11 +127,11 @@ public class ChatMessageController extends ApiController{
             }
         }
 
-        // Create the chat message
+        // Create the chat message, censoring any words on the admin-maintained filter list
         ChatMessage chatMessage = ChatMessage.builder()
         .gameId(gameId)
         .userId(userId)
-        .message(content)
+        .message(chatFilterService.censor(content))
         .hidden(false)
         .dm(false)
         .toUserId(0)

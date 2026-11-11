@@ -36,6 +36,10 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import edu.ucsb.cs156.happiercows.ControllerTestCase;
 import edu.ucsb.cs156.happiercows.repositories.ChatMessageRepository;
 import edu.ucsb.cs156.happiercows.entities.ChatMessage;
+import edu.ucsb.cs156.happiercows.entities.ChatFilterWord;
+import edu.ucsb.cs156.happiercows.repositories.ChatFilterWordRepository;
+import edu.ucsb.cs156.happiercows.services.ChatFilterService;
+import org.mockito.ArgumentCaptor;
 
 import edu.ucsb.cs156.happiercows.repositories.FarmerRepository;
 import edu.ucsb.cs156.happiercows.entities.Farmer;
@@ -45,6 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @WebMvcTest(controllers = ChatMessageController.class)
+@Import(ChatFilterService.class)
 public class ChatMessageControllerTests extends ControllerTestCase {
     
     @MockBean
@@ -52,6 +57,9 @@ public class ChatMessageControllerTests extends ControllerTestCase {
 
     @MockBean
     FarmerRepository farmerRepository;
+
+    @MockBean
+    ChatFilterWordRepository chatFilterWordRepository;
 
     @MockBean
     UserRepository userRepository;
@@ -336,6 +344,34 @@ public class ChatMessageControllerTests extends ControllerTestCase {
         String expectedResponseString = mapper.writeValueAsString(chatMessage);
         log.info("Got back from API: {}",responseString);
         assertEquals(expectedResponseString, responseString);
+    }
+
+    @WithMockUser(roles = {"USER"})
+    @Test
+    public void postedChatMessagesAreCensored() throws Exception {
+
+        // arrange
+        Long gameId = 1L;
+        Long userId = 1L;
+        String content = "you are a Dummy";
+
+        when(chatFilterWordRepository.findAll()).thenReturn(
+            Arrays.asList(ChatFilterWord.builder().id(1L).word("dummy").build()));
+
+        Farmer farmer = Farmer.builder()
+                .game(Game.builder().showChat(true).build())
+                .build();
+        when(farmerRepository.findByGameIdAndUserId(gameId, userId)).thenReturn(Optional.of(farmer));
+
+        // act
+        MvcResult response = mockMvc.perform(post("/api/chat/post?gameId={gameId}&content={content}", gameId, content).with(csrf()))
+            .andExpect(status().isOk()).andReturn();
+
+        // assert
+        ArgumentCaptor<ChatMessage> captor = ArgumentCaptor.forClass(ChatMessage.class);
+        verify(chatMessageRepository, times(1)).save(captor.capture());
+        assertEquals("you are a *****", captor.getValue().getMessage());
+        assertEquals("you are a *****", responseToJson(response).get("message"));
     }
 
     //* */ hide tests

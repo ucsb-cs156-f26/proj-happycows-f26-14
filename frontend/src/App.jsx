@@ -22,6 +22,7 @@ import AdminEditGamePage from "main/pages/AdminEditGamePage";
 import AdminListGamePageV2 from "main/pages/AdminListGamePageV2";
 import InstructorAdminShowPage from "main/pages/InstructorAdminShowPage";
 import AdminChatPage from "main/pages/AdminChatPage";
+import AdminChatFilterPage from "main/pages/AdminChatFilterPage";
 import AdminReportsPage from "main/pages/AdminReportsPage";
 import { hasRole, useCurrentUser } from "main/utils/currentUser";
 import PlayPage from "main/pages/PlayPage";
@@ -49,6 +50,7 @@ function App() {
       <Route path="/admin/listgamev2" element={<AdminListGamePageV2 />} />
       <Route path="/admin/editgame/:id" element={<AdminEditGamePage />} />
       <Route path="/admin/chat/:gameId" element={<AdminChatPage />} />
+      <Route path="/admin/chatfilter" element={<AdminChatFilterPage />} />
       <Route path="/admin/dashboard/:id" element={<DashboardPage />} />
       <Route path="/admin/listcourses" element={<AdminCoursesIndexPage />} />
       <Route path="/admin/createcourses" element={<AdminCoursesCreatePage />} />
