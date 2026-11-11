@@ -345,4 +345,49 @@ describe("ManageCowsModal", () => {
       "display: flex; justify-content: right",
     );
   });
+
+  test("shows a warning and does not buy fractional cows", () => {
+    const number = 1.2;
+
+    render(
+      <ManageCowsModal
+        isOpen={true}
+        onClose={mockOnClose}
+        message="buy"
+        farmer={farmerFixtures.oneFarmer[0]}
+        number={number}
+        onBuy={mockOnBuy}
+        setNumber={mockSetNumber}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("buy-sell-cow-modal-submit"));
+
+    expect(window.alert).toHaveBeenCalledWith(
+      "You cannot buy a fraction of a cow! Please enter a whole number.",
+    );
+    expect(mockOnBuy).not.toHaveBeenCalled();
+  });
+  test("shows a warning and does not sell fractional cows", () => {
+    const number = 1.2;
+
+    render(
+      <ManageCowsModal
+        isOpen={true}
+        onClose={mockOnClose}
+        message="sell"
+        farmer={farmerFixtures.oneFarmer[0]}
+        number={number}
+        onSell={mockOnSell}
+        setNumber={mockSetNumber}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("buy-sell-cow-modal-submit"));
+
+    expect(window.alert).toHaveBeenCalledWith(
+      "You cannot sell a fraction of a cow! Please enter a whole number.",
+    );
+    expect(mockOnSell).not.toHaveBeenCalled();
+  });
 });
