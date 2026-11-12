@@ -332,6 +332,11 @@ describe("ManageCowsModal", () => {
     expect(screen.getByTestId("buy-sell-cow-modal-footer")).toHaveStyle(
       "border-top-width: 0px",
     );
+
+    expect(
+      screen.getByTestId("buy-sell-cow-modal-footer").style.borderTop,
+    ).toBe("0px");
+
     expect(screen.getByTestId("buy-sell-cow-modal-input")).toHaveStyle(
       "width: 20%",
     );
