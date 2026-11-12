@@ -12,7 +12,8 @@ import lombok.NoArgsConstructor;
 
 /**
  * A word (or phrase) that admins have marked as inappropriate.
- * Any occurrence of it in a chat message is replaced with asterisks.
+ * Stored in normalized form (trimmed, single-spaced, lowercase) for use by
+ * the chat filter.
  */
 @Data
 @AllArgsConstructor

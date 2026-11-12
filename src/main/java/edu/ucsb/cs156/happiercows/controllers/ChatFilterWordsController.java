@@ -6,6 +6,7 @@ import edu.ucsb.cs156.happiercows.repositories.ChatFilterWordRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/chatfilterwords")
 @RestController
 public class ChatFilterWordsController extends ApiController {
+
+    /** Matches the VARCHAR(255) size of the WORD column in the migration. */
+    static final int MAX_WORD_LENGTH = 255;
 
     @Autowired
     private ChatFilterWordRepository chatFilterWordRepository;
@@ -33,12 +37,17 @@ public class ChatFilterWordsController extends ApiController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping("")
     public ResponseEntity<Object> postChatFilterWord(
-            @Parameter(description = "The word or phrase to censor") @RequestParam String word) {
-        String normalized = word.trim().toLowerCase();
+            @Parameter(description = "The word or phrase to censor. It is trimmed, runs of whitespace are collapsed to a single space, and it is lowercased.") @RequestParam String word) {
+        String normalized = word.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
 
         if (normalized.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(genericMessage("Word must not be blank"));
+        }
+
+        if (normalized.length() > MAX_WORD_LENGTH) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(genericMessage("Word must be at most %d characters".formatted(MAX_WORD_LENGTH)));
         }
 
         if (chatFilterWordRepository.findByWord(normalized).isPresent()) {

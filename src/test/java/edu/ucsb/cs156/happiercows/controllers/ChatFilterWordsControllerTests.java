@@ -17,6 +17,7 @@ import edu.ucsb.cs156.happiercows.entities.ChatFilterWord;
 import edu.ucsb.cs156.happiercows.repositories.ChatFilterWordRepository;
 import edu.ucsb.cs156.happiercows.repositories.UserRepository;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -65,6 +66,13 @@ public class ChatFilterWordsControllerTests extends ControllerTestCase {
 
     // POST /api/chatfilterwords
 
+    @Test
+    public void loggedOutUsersCannotAddWords() throws Exception {
+        mockMvc.perform(post("/api/chatfilterwords?word=darn").with(csrf()))
+                .andExpect(status().is(403));
+        verify(chatFilterWordRepository, never()).save(any());
+    }
+
     @WithMockUser(roles = { "USER" })
     @Test
     public void regularUsersCannotAddWords() throws Exception {
@@ -91,6 +99,67 @@ public class ChatFilterWordsControllerTests extends ControllerTestCase {
 
     @WithMockUser(roles = { "ADMIN", "USER" })
     @Test
+    public void adminAddingPhraseCollapsesInternalWhitespace() throws Exception {
+        when(chatFilterWordRepository.findByWord("bad word")).thenReturn(Optional.empty());
+        when(chatFilterWordRepository.save(any(ChatFilterWord.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(post("/api/chatfilterwords").param("word", " Bad \t  WORD ").with(csrf()))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<ChatFilterWord> captor = ArgumentCaptor.forClass(ChatFilterWord.class);
+        verify(chatFilterWordRepository, times(1)).save(captor.capture());
+        assertEquals("bad word", captor.getValue().getWord());
+    }
+
+    @WithMockUser(roles = { "ADMIN", "USER" })
+    @Test
+    public void lowercasingIgnoresDefaultLocale() throws Exception {
+        Locale original = Locale.getDefault();
+        try {
+            // In a Turkish locale, "I".toLowerCase() is a dotless "ı", not "i".
+            Locale.setDefault(Locale.forLanguageTag("tr"));
+            when(chatFilterWordRepository.findByWord("idiot")).thenReturn(Optional.empty());
+            when(chatFilterWordRepository.save(any(ChatFilterWord.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            mockMvc.perform(post("/api/chatfilterwords").param("word", "IDIOT").with(csrf()))
+                    .andExpect(status().isOk());
+
+            ArgumentCaptor<ChatFilterWord> captor = ArgumentCaptor.forClass(ChatFilterWord.class);
+            verify(chatFilterWordRepository, times(1)).save(captor.capture());
+            assertEquals("idiot", captor.getValue().getWord());
+        } finally {
+            Locale.setDefault(original);
+        }
+    }
+
+    @WithMockUser(roles = { "ADMIN", "USER" })
+    @Test
+    public void adminCanAddWordOfMaxLength() throws Exception {
+        String word = "a".repeat(255);
+        when(chatFilterWordRepository.findByWord(word)).thenReturn(Optional.empty());
+        when(chatFilterWordRepository.save(any(ChatFilterWord.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        mockMvc.perform(post("/api/chatfilterwords").param("word", word).with(csrf()))
+                .andExpect(status().isOk());
+
+        verify(chatFilterWordRepository, times(1)).save(any());
+    }
+
+    @WithMockUser(roles = { "ADMIN", "USER" })
+    @Test
+    public void adminCannotAddWordOverMaxLength() throws Exception {
+        MvcResult response = mockMvc.perform(post("/api/chatfilterwords").param("word", "a".repeat(256)).with(csrf()))
+                .andExpect(status().isBadRequest()).andReturn();
+
+        verify(chatFilterWordRepository, never()).save(any());
+        assertEquals(Map.of("message", "Word must be at most 255 characters"), responseToJson(response));
+    }
+
+    @WithMockUser(roles = { "ADMIN", "USER" })
+    @Test
     public void adminCannotAddBlankWord() throws Exception {
         MvcResult response = mockMvc.perform(post("/api/chatfilterwords").param("word", "   ").with(csrf()))
                 .andExpect(status().isBadRequest()).andReturn();
@@ -113,6 +182,13 @@ public class ChatFilterWordsControllerTests extends ControllerTestCase {
     }
 
     // DELETE /api/chatfilterwords
+
+    @Test
+    public void loggedOutUsersCannotDeleteWords() throws Exception {
+        mockMvc.perform(delete("/api/chatfilterwords?id=1").with(csrf()))
+                .andExpect(status().is(403));
+        verify(chatFilterWordRepository, never()).delete(any());
+    }
 
     @WithMockUser(roles = { "USER" })
     @Test
