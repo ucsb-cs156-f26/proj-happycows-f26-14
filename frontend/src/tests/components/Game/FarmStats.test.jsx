@@ -1,4 +1,3 @@
-
 import { render, screen, waitFor } from "@testing-library/react";
 import FarmStats from "main/components/Game/FarmStats";
 import farmerFixtures from "fixtures/farmerFixtures";
@@ -25,7 +24,7 @@ describe("FarmStats tests", () => {
     expect(screen.getByText(/Cow Health: 98%/)).toBeInTheDocument();
     expect(screen.getByText(/Total Cows Bought: 5/)).toBeInTheDocument();
     expect(screen.getByText(/Total Cows Sold: 5/)).toBeInTheDocument();
-    expect(screen.getByText(/💀 Cow Deaths: 5/)).toBeInTheDocument();
+    expect(screen.getByText(/Cow Deaths: 5/)).toBeInTheDocument();
   });
 
   test.each([
@@ -53,6 +52,11 @@ describe("FarmStats tests", () => {
     });
 
     expect(cowImage).toHaveAttribute("src", image);
+    expect(cowImage.style.height).toBe("auto");
+    expect(cowImage).toHaveStyle({
+      width: "150px",
+      height: "auto",
+    });
+    expect(cowImage.parentElement).toHaveClass("text-center", "mt-3");
   });
 });
-
