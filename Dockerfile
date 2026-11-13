@@ -1,46 +1,44 @@
-FROM ubuntu:22.04
+# ---- Stage 1: build the app (backend + frontend) ----
+# Maven is pinned here (3.9.16) instead of installed from apt, which shipped an old Maven whose
+# bundled Guava triggers the "sun.misc.Unsafe" warnings on JDK 24+. The Maven version is the one in the image tag.
+FROM maven:3.9.16-eclipse-temurin-25-noble AS builder
 
-# Set environment variables to avoid interactive prompts during installation
-ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /home/app
 
-RUN apt-get update 
-RUN apt-get install -y openjdk-25-jdk  
-RUN apt-get install -y  curl  
-RUN apt-get install -y  bash  
-RUN apt-get install -y maven  
-RUN apt-get install -y  python3 
-RUN apt-get clean
-RUN rm -rf /var/lib/apt/lists/*
+# Layering: files that change rarely are copied (and their dependencies downloaded) first, so Docker can
+# reuse those layers on later builds. The cache mounts keep ~/.m2 and ~/.npm between builds.
 
-# Set JAVA_HOME environment variable
-ENV JAVA_HOME=/usr/lib/jvm/java-25-openjdk-amd64
-ENV PATH="$JAVA_HOME/bin:$PATH"
+# 1. Backend dependencies (only re-run when pom.xml changes)
+COPY pom.xml .
+RUN --mount=id=156-base-mvn,type=cache,target=/root/.m2/repository \
+    mvn dependency:go-offline -B
 
-# Verify installation
-RUN java -version
+# 2. Node, npm and frontend dependencies (only re-run when package*.json changes)
+COPY frontend/package-lock.json frontend/package.json frontend/
+RUN --mount=id=156-base-mvn,type=cache,target=/root/.m2/repository \
+    --mount=id=156-base-npm,type=cache,target=/root/.npm \
+    mvn -Pproduction \
+      com.github.eirslett:frontend-maven-plugin:install-node-and-npm@install-node-and-npm \
+      com.github.eirslett:frontend-maven-plugin:npm@npm-install -B
+
+# 3. Everything else, then build the production jar.
+# frontend.dependency.skip=true: step 2 already ran "npm ci", so don't run it again.
+# (There is no "clean" here: a fresh image has nothing to clean, and "clean" would delete the node
+# install from step 2 in target/.)
+COPY . .
+RUN --mount=id=156-base-mvn,type=cache,target=/root/.m2/repository \
+    mvn -Pproduction -DskipTests -Dfrontend.dependency.skip=true package -B
+
+# ---- Stage 2: minimal runtime image (just a JRE, the jar and the startup script) ----
+FROM eclipse-temurin:25-jre-alpine
 
 WORKDIR /app
 
-# Verify installation
-RUN java -version
-RUN curl --version
-
-ENV NODE_VERSION=24.21.0
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-ENV NVM_DIR=/root/.nvm
-RUN . "$NVM_DIR/nvm.sh" && nvm install ${NODE_VERSION}
-RUN . "$NVM_DIR/nvm.sh" && nvm use v${NODE_VERSION}
-RUN . "$NVM_DIR/nvm.sh" && nvm alias default v${NODE_VERSION}
-ENV PATH="/root/.nvm/versions/node/v${NODE_VERSION}/bin/:${PATH}"
-
-RUN . "$NVM_DIR/nvm.sh" && nvm --version
-RUN node --version
-RUN npm --version
-
-COPY . /home/app
+RUN apk add --no-cache bash curl
 
 ENV PRODUCTION=true
-RUN mvn -B -ntp -DskipTests -Pproduction -f /home/app/pom.xml clean package
-RUN ["chmod", "+x", "/home/app/startup.sh"]
 
-ENTRYPOINT ["/home/app/startup.sh","/home/app/target/*.jar"]
+COPY --from=builder /home/app/startup.sh .
+COPY --from=builder /home/app/target/*.jar app.jar
+
+ENTRYPOINT ["./startup.sh", "app.jar"]
