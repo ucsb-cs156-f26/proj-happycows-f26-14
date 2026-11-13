@@ -17,7 +17,7 @@ import edu.ucsb.cs156.happiercows.models.SystemInfo;
 @Service(&quot;systemInfo&quot;)
 @ConfigurationProperties
 @PropertySources(
-  @PropertySource(&quot;classpath:git.properties&quot;)
+  @PropertySource(value = &quot;classpath:git.properties&quot;, ignoreResourceNotFound = true)
 )
 <span class="fc" id="L22">public class SystemInfoServiceImpl extends SystemInfoService {</span>
   
