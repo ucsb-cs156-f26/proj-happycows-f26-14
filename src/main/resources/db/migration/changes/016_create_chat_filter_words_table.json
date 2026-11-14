@@ -1,0 +1,56 @@
+{
+  "databaseChangeLog": [
+    {
+      "changeSet": {
+        "id": "016-CHAT-FILTER-WORDS",
+        "author": "krithih",
+        "preConditions": [
+          {
+            "onFail": "MARK_RAN"
+          },
+          {
+            "not": [
+              {
+                "tableExists": {
+                  "tableName": "CHAT_FILTER_WORDS"
+                }
+              }
+            ]
+          }
+        ],
+        "changes": [
+          {
+            "createTable": {
+              "columns": [
+                {
+                  "column": {
+                    "autoIncrement": true,
+                    "constraints": {
+                      "nullable": false,
+                      "primaryKey": true,
+                      "primaryKeyName": "CHAT_FILTER_WORDS_PK"
+                    },
+                    "name": "ID",
+                    "type": "BIGINT"
+                  }
+                },
+                {
+                  "column": {
+                    "constraints": {
+                      "nullable": false,
+                      "unique": true,
+                      "uniqueConstraintName": "CHAT_FILTER_WORDS_WORD_UNIQUE"
+                    },
+                    "name": "WORD",
+                    "type": "VARCHAR(255)"
+                  }
+                }
+              ],
+              "tableName": "CHAT_FILTER_WORDS"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
