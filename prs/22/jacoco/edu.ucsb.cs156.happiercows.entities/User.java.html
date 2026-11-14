@@ -35,6 +35,8 @@ public class User {
   @Builder.Default
   private Instant lastOnline = Instant.now();
 
+  private Instant cooldownUntil;
+
   @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST,CascadeType.REMOVE})
   @JoinTable(name = &quot;farmer&quot;, 
     joinColumns = @JoinColumn(name = &quot;user_id&quot;, referencedColumnName = &quot;id&quot;), 
@@ -48,7 +50,7 @@ public class User {
 
     @Override
     public String toString() {
-<span class="fc" id="L51">        return String.format(&quot;User: id=%d email=%s&quot;, id, email);</span>
+<span class="fc" id="L53">        return String.format(&quot;User: id=%d email=%s&quot;, id, email);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
