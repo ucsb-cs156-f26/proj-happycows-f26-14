@@ -1,0 +1,78 @@
+{
+  "databaseChangeLog": [
+    {
+      "changeSet": {
+        "id": "015-Add-Purchase-Fee-To-Game",
+        "author": "aylin",
+        "preConditions": [
+          {
+            "onFail": "MARK_RAN"
+          },
+          {
+            "not": [
+              {
+                "columnExists": {
+                  "tableName": "game",
+                  "columnName": "purchase_fee"
+                }
+              }
+            ]
+          }
+        ],
+        "changes": [
+          {
+            "addColumn": {
+              "tableName": "game",
+              "columns": [
+                {
+                  "column": {
+                    "name": "purchase_fee",
+                    "type": "DOUBLE",
+                    "defaultValue": "0.0"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "changeSet": {
+        "id": "015-Add-Selling-Fee-To-Game",
+        "author": "aylin",
+        "preConditions": [
+          {
+            "onFail": "MARK_RAN"
+          },
+          {
+            "not": [
+              {
+                "columnExists": {
+                  "tableName": "game",
+                  "columnName": "selling_fee"
+                }
+              }
+            ]
+          }
+        ],
+        "changes": [
+          {
+            "addColumn": {
+              "tableName": "game",
+              "columns": [
+                {
+                  "column": {
+                    "name": "selling_fee",
+                    "type": "DOUBLE",
+                    "defaultValue": "0.0"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
