@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from "react";
-import { Button, Spinner } from "react-bootstrap";
+import React, { useEffect, useRef, useState } from "react";
+import { Button, Spinner, Modal, Form } from "react-bootstrap";
 import { useParams, useNavigate } from "react-router";
 import { useInfiniteQuery } from "react-query";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 import BasicLayout from "main/layouts/BasicLayout/BasicLayout";
 import ChatMessageDisplay from "main/components/Chat/ChatMessageDisplay";
@@ -17,6 +18,10 @@ const ChatHistoryPage = ({ readOnly = false, isAdmin = false }) => {
   const { gameId } = useParams();
   const navigate = useNavigate();
   const loadMoreRef = useRef(null);
+
+  const [showCooldownModal, setShowCooldownModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [cooldownDuration, setCooldownDuration] = useState(10);
 
   const { data: farmerList } = useBackend(
     [`/api/farmer/game/all?gameId=${gameId}`],
@@ -53,10 +58,66 @@ const ChatHistoryPage = ({ readOnly = false, isAdmin = false }) => {
     [`/api/chat/admin/get?gameId=${gameId}`], // IMPORTANT
   );
 
+  const cooldownMutation = useBackendMutation(
+    ({ userId, durationMinutes }) => ({
+      url: "/api/admin/users/cooldown",
+      method: "POST",
+      params: { userId, durationMinutes },
+    }),
+    {
+      onSuccess: () => {
+        toast("Chat cooldown applied successfully.");
+        setShowCooldownModal(false);
+        setSelectedUser(null);
+      },
+    },
+  );
+
+  const clearCooldownMutation = useBackendMutation(
+    ({ userId }) => ({
+      url: "/api/admin/users/cooldown/clear",
+      method: "POST",
+      params: { userId },
+    }),
+    {
+      onSuccess: () => {
+        toast("Chat cooldown cleared successfully.");
+        setShowCooldownModal(false);
+        setSelectedUser(null);
+      },
+    },
+  );
+
   const handleDelete = (id) => {
     if (window.confirm("Delete this message?")) {
       deleteMutation.mutate(id);
     }
+  };
+
+  const openCooldownModal = (userId, username) => {
+    setSelectedUser({ userId, username });
+    setCooldownDuration(10);
+    setShowCooldownModal(true);
+  };
+
+  const applyCooldown = () => {
+    if (
+      !selectedUser ||
+      !Number.isInteger(Number(cooldownDuration)) ||
+      Number(cooldownDuration) <= 0
+    ) {
+      toast("Please enter a positive number of minutes.");
+      return;
+    }
+
+    cooldownMutation.mutate({
+      userId: selectedUser.userId,
+      durationMinutes: Number(cooldownDuration),
+    });
+  };
+
+  const clearCooldown = () => {
+    clearCooldownMutation.mutate({ userId: selectedUser.userId });
   };
 
   const fetchChatPage = async ({ pageParam = 0 }) => {
@@ -224,13 +285,24 @@ const ChatHistoryPage = ({ readOnly = false, isAdmin = false }) => {
               </div>
 
               {isAdmin && !message.hidden && (
-                <button
-                  className="btn btn-danger btn-sm ms-2"
-                  data-testid={`ChatHistoryPage-delete-${message.id}`}
-                  onClick={() => handleDelete(message.id)}
-                >
-                  Delete
-                </button>
+                <div className="d-flex gap-2 ms-2">
+                  <button
+                    className="btn btn-primary btn-sm"
+                    data-testid={`ChatHistoryPage-cooldown-${message.userId}`}
+                    onClick={() =>
+                      openCooldownModal(message.userId, message.username)
+                    }
+                  >
+                    Cooldown
+                  </button>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    data-testid={`ChatHistoryPage-delete-${message.id}`}
+                    onClick={() => handleDelete(message.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
               )}
             </div>
           ))}
@@ -250,6 +322,62 @@ const ChatHistoryPage = ({ readOnly = false, isAdmin = false }) => {
           <div className="text-center text-muted mt-2">
             Updating conversation...
           </div>
+        )}
+
+        {isAdmin && (
+          <Modal
+            show={showCooldownModal}
+            onHide={() => {
+              setShowCooldownModal(false);
+              setSelectedUser(null);
+            }}
+            data-testid="ChatHistoryPage-cooldown-modal"
+          >
+            <Modal.Header closeButton>
+              <Modal.Title>Manage Chat Cooldown</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <p>
+                User: <strong>{selectedUser?.username || "Unknown"}</strong>
+              </p>
+              <Form.Group>
+                <Form.Label>Cooldown duration (minutes)</Form.Label>
+                <Form.Control
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={cooldownDuration}
+                  onChange={(event) => setCooldownDuration(event.target.value)}
+                  data-testid="ChatHistoryPage-cooldown-duration"
+                />
+              </Form.Group>
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowCooldownModal(false);
+                  setSelectedUser(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="warning"
+                onClick={clearCooldown}
+                disabled={!selectedUser}
+              >
+                Clear Cooldown
+              </Button>
+              <Button
+                variant="primary"
+                onClick={applyCooldown}
+                disabled={!selectedUser}
+              >
+                Apply Cooldown
+              </Button>
+            </Modal.Footer>
+          </Modal>
         )}
       </div>
     </BasicLayout>
