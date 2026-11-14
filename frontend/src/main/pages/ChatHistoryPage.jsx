@@ -117,9 +117,7 @@ const ChatHistoryPage = ({ readOnly = false, isAdmin = false }) => {
   };
 
   const clearCooldown = () => {
-    if (selectedUser) {
-      clearCooldownMutation.mutate({ userId: selectedUser.userId });
-    }
+    clearCooldownMutation.mutate({ userId: selectedUser.userId });
   };
 
   const fetchChatPage = async ({ pageParam = 0 }) => {

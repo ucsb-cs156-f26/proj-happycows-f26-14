@@ -13,7 +13,12 @@ import AxiosMockAdapter from "axios-mock-adapter";
 import { vi, describe, test, beforeEach, beforeAll, expect } from "vitest";
 import * as reactQuery from "react-query";
 import * as backend from "main/utils/useBackend";
+import { toast } from "react-toastify";
 import ChatHistoryPage from "main/pages/ChatHistoryPage";
+
+vi.mock("react-toastify", () => ({
+  toast: vi.fn(),
+}));
 
 vi.mock("main/layouts/BasicLayout/BasicLayout", () => ({
   __esModule: true,
@@ -455,7 +460,7 @@ describe("ChatHistoryPage", () => {
     useInfiniteQuerySpy.mockRestore();
   });
 
-  test("admin can apply a chat cooldown with the selected duration", () => {
+  test("admin can apply a chat cooldown with the selected duration", async () => {
     const mutate = vi.fn();
     const mutationSpy = vi
       .spyOn(backend, "useBackendMutation")
@@ -466,6 +471,10 @@ describe("ChatHistoryPage", () => {
     });
 
     renderWithProviders(<ChatHistoryPage isAdmin={true} />);
+
+    expect(
+      screen.queryByTestId("ChatHistoryPage-cooldown-modal"),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("ChatHistoryPage-cooldown-5"));
 
@@ -487,16 +496,27 @@ describe("ChatHistoryPage", () => {
     });
 
     const cooldownRequest = mutationSpy.mock.calls[1][0];
+    const cooldownOptions = mutationSpy.mock.calls[1][1];
+
     expect(cooldownRequest({ userId: 5, durationMinutes: 15 })).toEqual({
       url: "/api/admin/users/cooldown",
       method: "POST",
       params: { userId: 5, durationMinutes: 15 },
     });
 
+    cooldownOptions.onSuccess();
+
+    expect(toast).toHaveBeenCalledWith("Chat cooldown applied successfully.");
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId("ChatHistoryPage-cooldown-modal"),
+      ).not.toBeInTheDocument();
+    });
+
     useInfiniteQuerySpy.mockRestore();
   });
 
-  test("admin can clear a chat cooldown", () => {
+  test("admin can clear a chat cooldown", async () => {
     const mutate = vi.fn();
     const mutationSpy = vi
       .spyOn(backend, "useBackendMutation")
@@ -514,10 +534,21 @@ describe("ChatHistoryPage", () => {
     expect(mutate).toHaveBeenCalledWith({ userId: 5 });
 
     const clearRequest = mutationSpy.mock.calls[2][0];
+    const clearOptions = mutationSpy.mock.calls[2][1];
+
     expect(clearRequest({ userId: 5 })).toEqual({
       url: "/api/admin/users/cooldown/clear",
       method: "POST",
       params: { userId: 5 },
+    });
+
+    clearOptions.onSuccess();
+
+    expect(toast).toHaveBeenCalledWith("Chat cooldown cleared successfully.");
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId("ChatHistoryPage-cooldown-modal"),
+      ).not.toBeInTheDocument();
     });
 
     useInfiniteQuerySpy.mockRestore();
@@ -547,10 +578,31 @@ describe("ChatHistoryPage", () => {
       fireEvent.click(screen.getByRole("button", { name: "Apply Cooldown" }));
 
       expect(mutate).not.toHaveBeenCalled();
+      expect(toast).toHaveBeenCalledWith(
+        "Please enter a positive number of minutes.",
+      );
 
       useInfiniteQuerySpy.mockRestore();
     },
   );
+
+  test("cooldown modal displays Unknown when the username is unavailable", () => {
+    const useInfiniteQuerySpy = mockInfiniteQuery({
+      data: { pages: [{ content: [{ id: 54, userId: 999, hidden: false }] }] },
+    });
+
+    renderWithProviders(<ChatHistoryPage isAdmin={true} />);
+
+    fireEvent.click(screen.getByTestId("ChatHistoryPage-cooldown-999"));
+
+    expect(
+      screen
+        .getByTestId("ChatHistoryPage-cooldown-modal")
+        .querySelector("strong"),
+    ).toHaveTextContent("Unknown");
+
+    useInfiniteQuerySpy.mockRestore();
+  });
 
   test("non-admin mode does not render chat cooldown controls", () => {
     const useInfiniteQuerySpy = mockInfiniteQuery({
