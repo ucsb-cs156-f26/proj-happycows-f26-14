@@ -35,6 +35,8 @@ public class User {
   @Builder.Default
   private Instant lastOnline = Instant.now();
 
+  private Instant cooldownUntil;
+
   @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST,CascadeType.REMOVE})
   @JoinTable(name = "farmer", 
     joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"), 
