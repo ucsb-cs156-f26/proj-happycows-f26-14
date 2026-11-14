@@ -34,6 +34,7 @@ import AdminCreateAnnouncementsPage from "main/pages/AdminCreateAnnouncementsPag
 import AdminEditAnnouncementsPage from "main/pages/AdminEditAnnouncementsPage";
 import DeveloperPage from "main/pages/DeveloperPage";
 import ChatHistoryPage from "main/pages/ChatHistoryPage";
+import AdminChatFilterWordsPage from "main/pages/AdminChatFilterWordsPage";
 
 function App() {
   const { data: currentUser } = useCurrentUser();
@@ -49,6 +50,10 @@ function App() {
       <Route path="/admin/listgamev2" element={<AdminListGamePageV2 />} />
       <Route path="/admin/editgame/:id" element={<AdminEditGamePage />} />
       <Route path="/admin/chat/:gameId" element={<AdminChatPage />} />
+      <Route
+        path="/admin/chatfilterwords"
+        element={<AdminChatFilterWordsPage />}
+      />
       <Route path="/admin/dashboard/:id" element={<DashboardPage />} />
       <Route path="/admin/listcourses" element={<AdminCoursesIndexPage />} />
       <Route path="/admin/createcourses" element={<AdminCoursesCreatePage />} />
