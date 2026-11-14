@@ -554,6 +554,52 @@ describe("ChatHistoryPage", () => {
     useInfiniteQuerySpy.mockRestore();
   });
 
+  test("cancel closes the cooldown modal", async () => {
+    const useInfiniteQuerySpy = mockInfiniteQuery({
+      data: { pages: [{ content: [{ id: 55, userId: 5, hidden: false }] }] },
+    });
+
+    renderWithProviders(<ChatHistoryPage isAdmin={true} />);
+
+    fireEvent.click(screen.getByTestId("ChatHistoryPage-cooldown-5"));
+    expect(
+      screen.getByTestId("ChatHistoryPage-cooldown-modal"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId("ChatHistoryPage-cooldown-modal"),
+      ).not.toBeInTheDocument();
+    });
+
+    useInfiniteQuerySpy.mockRestore();
+  });
+
+  test("closing the cooldown modal with its close button hides it", async () => {
+    const useInfiniteQuerySpy = mockInfiniteQuery({
+      data: { pages: [{ content: [{ id: 56, userId: 5, hidden: false }] }] },
+    });
+
+    renderWithProviders(<ChatHistoryPage isAdmin={true} />);
+
+    fireEvent.click(screen.getByTestId("ChatHistoryPage-cooldown-5"));
+    expect(
+      screen.getByTestId("ChatHistoryPage-cooldown-modal"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Close"));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByTestId("ChatHistoryPage-cooldown-modal"),
+      ).not.toBeInTheDocument();
+    });
+
+    useInfiniteQuerySpy.mockRestore();
+  });
+
   test.each(["0", "-5", "1.5"])(
     "does not apply an invalid cooldown duration: %s",
     (duration) => {
