@@ -47,6 +47,8 @@ describe("GameForm tests", () => {
     [
       /Starting Balance/,
       /Cow Price/,
+      /Purchase Fee/,
+      /Selling Fee/,
       /Milk Price/,
       /Starting Date/,
       /Last Date/,
@@ -112,6 +114,12 @@ describe("GameForm tests", () => {
     fireEvent.change(screen.getByTestId("GameForm-milkPrice"), {
       target: { value: "" },
     });
+    fireEvent.change(screen.getByTestId("GameForm-purchaseFee"), {
+      target: { value: "" },
+    });
+    fireEvent.change(screen.getByTestId("GameForm-sellingFee"), {
+      target: { value: "" },
+    });
     fireEvent.change(screen.getByTestId("GameForm-cowPrice"), {
       target: { value: "" },
     });
@@ -122,6 +130,8 @@ describe("GameForm tests", () => {
       await screen.findByText("Cow price is required"),
     ).toBeInTheDocument();
     expect(screen.getByText("Milk price is required")).toBeInTheDocument();
+    expect(screen.getByText("Purchase fee is required")).toBeInTheDocument();
+    expect(screen.getByText("Selling fee is required")).toBeInTheDocument();
     expect(
       screen.getByText("Starting Balance is required"),
     ).toBeInTheDocument();
@@ -131,6 +141,12 @@ describe("GameForm tests", () => {
       target: { value: "-1" },
     });
     fireEvent.change(screen.getByTestId("GameForm-cowPrice"), {
+      target: { value: "-1" },
+    });
+    fireEvent.change(screen.getByTestId("GameForm-purchaseFee"), {
+      target: { value: "-1" },
+    });
+    fireEvent.change(screen.getByTestId("GameForm-sellingFee"), {
       target: { value: "-1" },
     });
     fireEvent.change(screen.getByTestId("GameForm-startingBalance"), {
@@ -154,6 +170,8 @@ describe("GameForm tests", () => {
       "GameForm-carryingCapacity",
       "GameForm-milkPrice",
       "GameForm-cowPrice",
+      "GameForm-purchaseFee",
+      "GameForm-sellingFee",
       "GameForm-startingBalance",
       "GameForm-startingDate",
       "GameForm-lastDate",
@@ -185,6 +203,8 @@ describe("GameForm tests", () => {
       name: "",
       startingBalance: 10000,
       cowPrice: 100,
+      purchaseFee: 0,
+      sellingFee: 0,
       milkPrice: 1,
       degradationRate: 0.001,
       carryingCapacity: 100,
@@ -211,6 +231,8 @@ describe("GameForm tests", () => {
       "carryingCapacity",
       "milkPrice",
       "cowPrice",
+      "purchaseFee",
+      "sellingFee",
       "startingBalance",
       "startingDate",
       "lastDate",
@@ -291,27 +313,30 @@ describe("GameForm tests", () => {
       .onGet("/api/game/all-health-update-strategies")
       .reply(200, healthUpdateStrategyListFixtures.real);
 
+    const initialGame = {
+      ...gameFixtures.threeGame[0],
+      purchaseFee: 2,
+      sellingFee: 3,
+    };
+
     render(
       <QueryClientProvider client={new QueryClient()}>
         <Router>
-          <GameForm initialGame={gameFixtures.threeGame[0]} />
+          <GameForm initialGame={initialGame} />
         </Router>
       </QueryClientProvider>,
     );
 
     expect(await screen.findByText(/Id/)).toBeInTheDocument();
-
-    expect(screen.getByTestId("GameForm-id")).toHaveValue(
-      `${gameFixtures.threeGame[0].id}`,
-    );
-    expect(screen.getByTestId("GameForm-name")).toHaveValue(
-      gameFixtures.threeGame[0].name,
-    );
+    expect(screen.getByTestId("GameForm-purchaseFee")).toHaveValue(2);
+    expect(screen.getByTestId("GameForm-sellingFee")).toHaveValue(3);
+    expect(screen.getByTestId("GameForm-id")).toHaveValue(`${initialGame.id}`);
+    expect(screen.getByTestId("GameForm-name")).toHaveValue(initialGame.name);
     expect(screen.getByTestId("GameForm-startingBalance")).toHaveValue(
-      gameFixtures.threeGame[0].startingBalance,
+      initialGame.startingBalance,
     );
     expect(screen.getByTestId("GameForm-cowPrice")).toHaveValue(
-      gameFixtures.threeGame[0].cowPrice,
+      initialGame.cowPrice,
     );
 
     await screen.findByTestId("aboveCapacityHealthUpdateStrategy-Noop");
@@ -476,6 +501,8 @@ describe("GameForm tests", () => {
       name: "",
       startingBalance: 10000,
       cowPrice: 100,
+      purchaseFee: 2,
+      sellingFee: 3,
       milkPrice: 1,
       degradationRate: 0.001,
       carryingCapacity: 100,
@@ -504,6 +531,8 @@ describe("GameForm tests", () => {
       "carryingCapacity",
       "milkPrice",
       "cowPrice",
+      "purchaseFee",
+      "sellingFee",
       "startingBalance",
       "startingDate",
       "lastDate",
@@ -562,10 +591,13 @@ describe("GameForm tests", () => {
       curr.getMonth() + 4,
       curr.getDate(),
     ).toLocaleDateString("en-CA");
+
     const defaultValuesData = {
       name: "",
       startingBalance: 10000,
       cowPrice: 100,
+      purchaseFee: 2,
+      sellingFee: 3,
       milkPrice: 1,
       degradationRate: 0.001,
       carryingCapacity: 100,
@@ -573,13 +605,11 @@ describe("GameForm tests", () => {
       lastDate: fourMonthsLater,
     };
 
-    vi.spyOn(useBackendModule, "useBackend").mockReturnValue({
-      data: defaultValuesData,
-    });
+    axiosMock
+      .onGet("/api/game/all-health-update-strategies")
+      .reply(200, healthUpdateStrategyListFixtures.real);
 
-    vi.spyOn(useBackendModule, "useBackend").mockReturnValue({
-      data: healthUpdateStrategyListFixtures.real,
-    });
+    axiosMock.onGet("/api/game/defaults").reply(200, defaultValuesData);
 
     render(
       <QueryClientProvider client={new QueryClient()}>
@@ -592,6 +622,10 @@ describe("GameForm tests", () => {
     expect(await screen.findByTestId("GameForm-startingBalance")).toHaveValue(
       defaultValuesData.startingBalance,
     );
+
+    expect(screen.getByTestId("GameForm-purchaseFee")).toHaveValue(2);
+    expect(screen.getByTestId("GameForm-sellingFee")).toHaveValue(3);
+
     expect(screen.getByTestId("GameForm-name")).toHaveValue(
       defaultValuesData.name,
     );

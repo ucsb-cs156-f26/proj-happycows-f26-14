@@ -481,6 +481,8 @@ public class GameControllerTests extends ControllerTestCase {
         CreateGameParams parameters = CreateGameParams.builder()
                 .name("Jackson's Game")
                 .cowPrice(500.99)
+                .purchaseFee(2.50)
+                .sellingFee(1.25)
                 .milkPrice(8.99)
                 .startingBalance(1020.10)
                 .startingDate(someTime)
@@ -498,6 +500,8 @@ public class GameControllerTests extends ControllerTestCase {
         Game game = Game.builder()
                 .name("Jackson's Game")
                 .cowPrice(500.99)
+                .purchaseFee(2.50)
+                .sellingFee(1.25)
                 .milkPrice(8.99)
                 .startingBalance(1020.10)
                 .startingDate(someTime)
@@ -525,8 +529,12 @@ public class GameControllerTests extends ControllerTestCase {
                 .andExpect(status().isCreated());
 
         verify(gameRepository, times(1)).save(game);
-                when(gameRepository.findById(0L))
+        assertEquals(2.50, game.getPurchaseFee());
+        assertEquals(1.25, game.getSellingFee());       
+        when(gameRepository.findById(0L))
                 .thenReturn(Optional.of(game));
+
+
 
         // When we look up the game it should have the values from "before" the update
         when(gameRepository.findById(0L))

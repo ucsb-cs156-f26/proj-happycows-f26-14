@@ -140,6 +140,8 @@ describe("AdminCreateGamePage tests", () => {
       startingBalance: 500,
       cowPrice: 10,
       milkPrice: 5,
+      purchaseFee: 0,
+      sellingFee: 0,
       degradationRate: 30.4,
       carryingCapacity: 25,
       capacityPerUser: 10,

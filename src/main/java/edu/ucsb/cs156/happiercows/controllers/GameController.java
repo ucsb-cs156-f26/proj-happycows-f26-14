@@ -94,6 +94,11 @@ public class GameController extends ApiController {
         Game defaultGame = Game.builder()
                 .startingBalance(defaultStartingBalance)
                 .cowPrice(defaultCowPrice)
+
+                // Default fees
+                .purchaseFee(0.0)
+                .sellingFee(0.0)
+
                 .milkPrice(defaultMilkPrice)
                 .degradationRate(defaultDegradationRate)
                 .carryingCapacity(defaultCarryingCapacity)
@@ -165,6 +170,8 @@ public class GameController extends ApiController {
 
         updated.setName(params.getName());
         updated.setCowPrice(params.getCowPrice());
+        updated.setPurchaseFee(params.getPurchaseFee());
+        updated.setSellingFee(params.getSellingFee());
         updated.setMilkPrice(params.getMilkPrice());
         updated.setStartingBalance(params.getStartingBalance());
         updated.setStartingDate(params.getStartingDate());
@@ -237,6 +244,11 @@ public class GameController extends ApiController {
         var builder = Game.builder()
                 .name(params.getName())
                 .cowPrice(params.getCowPrice())
+
+                //added
+                .purchaseFee(params.getPurchaseFee())
+                .sellingFee(params.getSellingFee())
+
                 .milkPrice(params.getMilkPrice())
                 .startingBalance(params.getStartingBalance())
                 .startingDate(params.getStartingDate())
