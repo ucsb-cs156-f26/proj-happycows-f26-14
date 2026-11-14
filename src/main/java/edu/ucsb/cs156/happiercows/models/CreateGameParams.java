@@ -14,6 +14,17 @@ public class CreateGameParams {
     private String name;
     @NumberFormat
     private double cowPrice;
+
+    // Fee charged per cow when buying
+    @NumberFormat
+    @Builder.Default
+    private double purchaseFee = 0.0;
+
+    // Fee charged per cow when selling
+    @NumberFormat
+    @Builder.Default
+    private double sellingFee = 0.0;
+
     @NumberFormat
     private double milkPrice;
     @NumberFormat
