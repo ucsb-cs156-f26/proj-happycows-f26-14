@@ -455,6 +455,117 @@ describe("ChatHistoryPage", () => {
     useInfiniteQuerySpy.mockRestore();
   });
 
+  test("admin can apply a chat cooldown with the selected duration", () => {
+    const mutate = vi.fn();
+    const mutationSpy = vi
+      .spyOn(backend, "useBackendMutation")
+      .mockReturnValue({ mutate });
+
+    const useInfiniteQuerySpy = mockInfiniteQuery({
+      data: { pages: [{ content: [{ id: 50, userId: 5, hidden: false }] }] },
+    });
+
+    renderWithProviders(<ChatHistoryPage isAdmin={true} />);
+
+    fireEvent.click(screen.getByTestId("ChatHistoryPage-cooldown-5"));
+
+    expect(screen.getByText("Manage Chat Cooldown")).toBeInTheDocument();
+    expect(
+      screen
+        .getByTestId("ChatHistoryPage-cooldown-modal")
+        .querySelector("strong"),
+    ).toHaveTextContent("Alice");
+
+    fireEvent.change(screen.getByTestId("ChatHistoryPage-cooldown-duration"), {
+      target: { value: "15" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply Cooldown" }));
+
+    expect(mutate).toHaveBeenCalledWith({
+      userId: 5,
+      durationMinutes: 15,
+    });
+
+    const cooldownRequest = mutationSpy.mock.calls[1][0];
+    expect(cooldownRequest({ userId: 5, durationMinutes: 15 })).toEqual({
+      url: "/api/admin/users/cooldown",
+      method: "POST",
+      params: { userId: 5, durationMinutes: 15 },
+    });
+
+    useInfiniteQuerySpy.mockRestore();
+  });
+
+  test("admin can clear a chat cooldown", () => {
+    const mutate = vi.fn();
+    const mutationSpy = vi
+      .spyOn(backend, "useBackendMutation")
+      .mockReturnValue({ mutate });
+
+    const useInfiniteQuerySpy = mockInfiniteQuery({
+      data: { pages: [{ content: [{ id: 51, userId: 5, hidden: false }] }] },
+    });
+
+    renderWithProviders(<ChatHistoryPage isAdmin={true} />);
+
+    fireEvent.click(screen.getByTestId("ChatHistoryPage-cooldown-5"));
+    fireEvent.click(screen.getByRole("button", { name: "Clear Cooldown" }));
+
+    expect(mutate).toHaveBeenCalledWith({ userId: 5 });
+
+    const clearRequest = mutationSpy.mock.calls[2][0];
+    expect(clearRequest({ userId: 5 })).toEqual({
+      url: "/api/admin/users/cooldown/clear",
+      method: "POST",
+      params: { userId: 5 },
+    });
+
+    useInfiniteQuerySpy.mockRestore();
+  });
+
+  test.each(["0", "-5", "1.5"])(
+    "does not apply an invalid cooldown duration: %s",
+    (duration) => {
+      const mutate = vi.fn();
+      vi.spyOn(backend, "useBackendMutation").mockReturnValue({ mutate });
+
+      const useInfiniteQuerySpy = mockInfiniteQuery({
+        data: { pages: [{ content: [{ id: 53, userId: 5, hidden: false }] }] },
+      });
+
+      renderWithProviders(<ChatHistoryPage isAdmin={true} />);
+
+      fireEvent.click(screen.getByTestId("ChatHistoryPage-cooldown-5"));
+
+      fireEvent.change(
+        screen.getByTestId("ChatHistoryPage-cooldown-duration"),
+        {
+          target: { value: duration },
+        },
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Apply Cooldown" }));
+
+      expect(mutate).not.toHaveBeenCalled();
+
+      useInfiniteQuerySpy.mockRestore();
+    },
+  );
+
+  test("non-admin mode does not render chat cooldown controls", () => {
+    const useInfiniteQuerySpy = mockInfiniteQuery({
+      data: { pages: [{ content: [{ id: 52, userId: 5, hidden: false }] }] },
+    });
+
+    renderWithProviders(<ChatHistoryPage isAdmin={false} />);
+
+    expect(
+      screen.queryByTestId("ChatHistoryPage-cooldown-5"),
+    ).not.toBeInTheDocument();
+
+    useInfiniteQuerySpy.mockRestore();
+  });
+
   test("observer is registered only when hasNextPage is true; cleanup calls unobserve", async () => {
     const useInfiniteQuerySpy = mockInfiniteQuery({ hasNextPage: true });
     const { unmount } = renderWithProviders();
