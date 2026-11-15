@@ -32,11 +32,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+
+import edu.ucsb.cs156.happiercows.entities.CowHerd;
+import edu.ucsb.cs156.happiercows.repositories.CowHerdRepository;
+
 @WebMvcTest(controllers = FarmerController.class)
 public class FarmerControllerTests extends ControllerTestCase {
 
     @MockBean
     FarmerRepository farmerRepository;
+
+
+    @MockBean
+    CowHerdRepository cowHerdRepository;
 
     @MockBean
     UserRepository userRepository;
@@ -179,6 +187,15 @@ public class FarmerControllerTests extends ControllerTestCase {
                 eq(FarmerActivity.ACTIVITY_TYPE_BUY), eq(2));
         String responseString = response.getResponse().getContentAsString();
         assertEquals(expectedReturn, responseString);
+
+        verify(cowHerdRepository, times(1)).save(argThat(herd ->
+                herd.getFarmer() == origFarmer &&
+                herd.getNumOfCows() == 2 &&
+                herd.getCowHealth() == 100
+        ));
+
+
+
     }
 
     @WithMockUser(roles = {"USER"})
@@ -221,9 +238,12 @@ public class FarmerControllerTests extends ControllerTestCase {
         verify(courseAccessService, times(1)).isEligibleForGame(eq(currentUser), eq(testGame));
         verify(farmerRepository, times(1)).findByGameIdAndUserId(eq(1L), eq(1L));
 
+        
         String expectedJson = mapper.writeValueAsString(expectedFarmer);
         String responseString = response.getResponse().getContentAsString();
         assertEquals(expectedJson, responseString);
+
+
     }
 
     @WithMockUser(roles = {"USER"})
@@ -517,6 +537,7 @@ public class FarmerControllerTests extends ControllerTestCase {
         Map<String, Object> expectedJson = mapper.readValue(expectedString, Map.class);
         Map<String, Object> jsonResponse = responseToJson(response);
         assertEquals(expectedJson, jsonResponse);
+        verify(cowHerdRepository, never()).save(any(CowHerd.class));
     }
 
     @WithMockUser(roles = {"USER"})
