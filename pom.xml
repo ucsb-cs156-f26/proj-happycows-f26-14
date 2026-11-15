@@ -212,6 +212,10 @@
                     <generateGitPropertiesFile>true</generateGitPropertiesFile>
                     <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
                     <commitIdGenerationMode>full</commitIdGenerationMode>
+                    <!-- Docker builds on Dokku only have a .git directory when the app sets keep-git-dir;
+                         without it, warn and skip git.properties (commitId then shows as "unknown")
+                         instead of failing the build. -->
+                    <failOnNoGitDirectory>false</failOnNoGitDirectory>
                 </configuration>
             </plugin>
 
@@ -423,7 +427,7 @@
                 </configuration>
                 <executions>
                 <execution>
-                    <id>install node and npm</id>
+                    <id>install-node-and-npm</id>
                     <goals>
                     <goal>install-node-and-npm</goal>
                     </goals>
@@ -432,7 +436,7 @@
                     </configuration>
                 </execution>
                 <execution>
-                    <id>npm install</id>
+                    <id>npm-install</id>
                     <goals>
                     <goal>npm</goal>
                     </goals>
@@ -442,7 +446,7 @@
                     </configuration>
                 </execution>
                 <execution>
-                    <id>npm run build</id>
+                    <id>npm-run-build</id>
                     <goals>
                     <goal>npm</goal>
                     </goals>
@@ -551,7 +555,7 @@
                         </configuration>
                         <executions>
                             <execution>
-                                <id>install node and npm</id>
+                                <id>install-node-and-npm</id>
                                 <goals>
                                     <goal>install-node-and-npm</goal>
                                 </goals>
@@ -560,7 +564,7 @@
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>npm install</id>
+                                <id>npm-install</id>
                                 <goals>
                                     <goal>npm</goal>
                                 </goals>
@@ -570,7 +574,7 @@
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>npm run build</id>
+                                <id>npm-run-build</id>
                                 <goals>
                                     <goal>npm</goal>
                                 </goals>
