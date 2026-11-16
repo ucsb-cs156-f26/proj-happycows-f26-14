@@ -46,6 +46,10 @@ describe("AppNavbar tests", () => {
     fireEvent.click(screen.getByText("Admin"));
     expect(await screen.findByText("List Games")).toBeInTheDocument();
     expect(screen.queryByText("List Games V2")).not.toBeInTheDocument();
+    expect(screen.getByText("Chat Filter Words")).toHaveAttribute(
+      "href",
+      "/admin/chatfilterwords",
+    );
   });
 
   test("renders H2Console and Swagger links correctly", async () => {
