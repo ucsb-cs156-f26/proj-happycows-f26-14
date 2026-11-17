@@ -1,0 +1,19 @@
+# Things the production build and the running app don't need.
+# NOTE: keep .git (the git-commit-id plugin reads it when Dokku has keep-git-dir=true).
+.devcontainer/
+.devcontainer.json
+.github/
+dev_environment/
+docs/
+issues/
+frontend/.storybook
+frontend/docs-index
+frontend/node_modules
+frontend/build
+frontend/storybook-static
+frontend/.stryker-tmp
+frontend/reports
+target/
+*.md
+Dockerfile
+.dockerignore
