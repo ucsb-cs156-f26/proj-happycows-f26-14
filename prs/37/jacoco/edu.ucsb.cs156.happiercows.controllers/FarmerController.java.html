@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FarmerController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">happycows</a> &gt; <a href="index.source.html" class="el_package">edu.ucsb.cs156.happiercows.controllers</a> &gt; <span class="el_source">FarmerController.java</span></div><h1>FarmerController.java</h1><pre class="source lang-java linenums">package edu.ucsb.cs156.happiercows.controllers;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import edu.ucsb.cs156.happiercows.repositories.FarmerRepository;
+import edu.ucsb.cs156.happiercows.repositories.GameRepository;
+import edu.ucsb.cs156.happiercows.entities.User;
+import edu.ucsb.cs156.happiercows.entities.Farmer;
+import edu.ucsb.cs156.happiercows.entities.FarmerActivity;
+import edu.ucsb.cs156.happiercows.entities.Game;
+import edu.ucsb.cs156.happiercows.errors.EntityNotFoundException;
+import edu.ucsb.cs156.happiercows.errors.NoCowsException;
+import edu.ucsb.cs156.happiercows.errors.NotEnoughMoneyException;
+import edu.ucsb.cs156.happiercows.errors.GameHiddenException;
+import edu.ucsb.cs156.happiercows.errors.NotEnrolledInCourseAssociatedWithGameException;
+import edu.ucsb.cs156.happiercows.models.FarmerWithStudentStatus;
+import edu.ucsb.cs156.happiercows.services.CourseAccessService;
+import edu.ucsb.cs156.happiercows.services.FarmerActivityService;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.transaction.annotation.Transactional;
+
+import edu.ucsb.cs156.happiercows.entities.CowHerd;
+import edu.ucsb.cs156.happiercows.repositories.CowHerdRepository;
+
+
+
+@Tag(name = &quot;User Game&quot;)
+@RequestMapping(&quot;/api/farmer&quot;)
+@RestController
+<span class="fc" id="L48">public class FarmerController extends ApiController {</span>
+
+  @Autowired
+  private FarmerRepository farmerRepository;
+
+
+  @Autowired
+  private CowHerdRepository cowHerdRepository;
+
+  @Autowired
+  private GameRepository gameRepository;
+
+  @Autowired
+  ObjectMapper mapper;
+
+  @Autowired
+  private CourseAccessService courseAccessService;
+
+  @Autowired
+  private FarmerActivityService farmerActivityService;
+
+  @Operation(summary = &quot;Get a specific user game (admin only)&quot;)
+  @PreAuthorize(&quot;hasRole('ROLE_ADMIN')&quot;)
+  @GetMapping(&quot;&quot;)
+  public Farmer getFarmerById(
+      @Parameter(name=&quot;userId&quot;) @RequestParam Long userId,
+      @Parameter(name=&quot;gameId&quot;) @RequestParam Long gameId) throws JsonProcessingException {
+
+<span class="fc" id="L76">    Farmer farmer = farmerRepository.findByGameIdAndUserId(gameId, userId)</span>
+<span class="fc" id="L77">        .orElseThrow(</span>
+<span class="fc" id="L78">            () -&gt; new EntityNotFoundException(Farmer.class, &quot;gameId&quot;, gameId, &quot;userId&quot;, userId));</span>
+<span class="fc" id="L79">    return farmer;</span>
+  }
+
+  @Operation(summary = &quot;Get a user game for current user&quot;)
+  @PreAuthorize(&quot;hasRole('ROLE_USER')&quot;)
+  @GetMapping(&quot;/forcurrentuser&quot;)
+  public Farmer getFarmerById(
+      @Parameter(name=&quot;gameId&quot;) @RequestParam Long gameId) throws JsonProcessingException {
+
+<span class="fc" id="L88">    User u = getCurrentUser().getUser();</span>
+<span class="fc" id="L89">    Long userId = u.getId();</span>
+<span class="fc" id="L90">    Game game = gameRepository.findById(gameId)</span>
+<span class="fc" id="L91">        .orElseThrow(() -&gt; new EntityNotFoundException(&quot;Game&quot;, gameId));</span>
+<span class="fc" id="L92">    ensureUserCanAccessCourseLinkedGame(u, game);</span>
+<span class="fc" id="L93">    Farmer farmer = farmerRepository.findByGameIdAndUserId(gameId, userId)</span>
+<span class="fc" id="L94">        .orElseThrow(</span>
+<span class="fc" id="L95">            () -&gt; new EntityNotFoundException(Farmer.class, &quot;gameId&quot;, gameId, &quot;userId&quot;, userId));</span>
+<span class="fc" id="L96">    return farmer;</span>
+  }
+
+  @Operation(summary = &quot;Buy a cow, totalWealth updated&quot;)
+  @PreAuthorize(&quot;hasRole('ROLE_USER')&quot;)
+  @PutMapping(&quot;/buy&quot;)
+  public ResponseEntity&lt;String&gt; putFarmerByIdBuy(
+          @Parameter(name=&quot;gameId&quot;) @RequestParam Long gameId,
+          @Parameter(name=&quot;numCows&quot;) @RequestParam int numCows) throws NotEnoughMoneyException, JsonProcessingException{
+
+<span class="fc" id="L106">        User u = getCurrentUser().getUser();</span>
+<span class="fc" id="L107">        Long userId = u.getId();</span>
+
+<span class="fc" id="L109">        Game game = gameRepository.findById(gameId).orElseThrow( </span>
+<span class="fc" id="L110">          ()-&gt;new EntityNotFoundException(&quot;Game&quot;, gameId));</span>
+
+<span class="fc" id="L112">        ensureUserCanAccessCourseLinkedGame(u, game);</span>
+
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        if (game.isHidden()) {</span>
+<span class="fc" id="L115">          throw new GameHiddenException(gameId);</span>
+        }
+
+<span class="fc" id="L118">        Farmer farmer = farmerRepository.findByGameIdAndUserId(gameId, userId)</span>
+<span class="fc" id="L119">        .orElseThrow(</span>
+<span class="fc" id="L120">            () -&gt; new EntityNotFoundException(Farmer.class, &quot;gameId&quot;, gameId, &quot;userId&quot;, userId));</span>
+
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        if(farmer.getTotalWealth() &gt;= (game.getCowPrice() * numCows)){</span>
+<span class="fc" id="L123">          farmer.setTotalWealth(farmer.getTotalWealth() - (game.getCowPrice() * numCows));</span>
+<span class="fc" id="L124">          farmer.setNumOfCows(farmer.getNumOfCows() + numCows);</span>
+<span class="fc" id="L125">          farmer.setCowsBought(farmer.getCowsBought() + numCows);</span>
+        }
+        else{
+<span class="fc" id="L128">          throw new NotEnoughMoneyException(&quot;You need more money!&quot;);</span>
+        }
+<span class="fc" id="L130">        farmerRepository.save(farmer);</span>
+<span class="fc" id="L131">        CowHerd herd = CowHerd.builder()</span>
+<span class="fc" id="L132">            .farmer(farmer)</span>
+<span class="fc" id="L133">            .numOfCows(numCows)</span>
+<span class="fc" id="L134">            .cowHealth(100)</span>
+<span class="fc" id="L135">            .build();</span>
+
+<span class="fc" id="L137">        cowHerdRepository.save(herd);</span>
+
+<span class="fc" id="L139">        farmerActivityService.recordActivityIfStudentMatch(</span>
+            u, game, farmer, FarmerActivity.ACTIVITY_TYPE_BUY, numCows);
+
+<span class="fc" id="L142">        String body = mapper.writeValueAsString(farmer);</span>
+<span class="fc" id="L143">        return ResponseEntity.ok().body(body);</span>
+    }
+
+  @Operation(summary = &quot;Sell a cow, totalWealth updated&quot;)
+  @PreAuthorize(&quot;hasRole('ROLE_USER')&quot;)
+  @PutMapping(&quot;/sell&quot;)
+  public ResponseEntity&lt;String&gt; putFarmerByIdSell(
+          @Parameter(name=&quot;gameId&quot;) @RequestParam Long gameId,
+          @Parameter(name=&quot;numCows&quot;) @RequestParam int numCows) throws NoCowsException, JsonProcessingException {
+<span class="fc" id="L152">        User u = getCurrentUser().getUser();</span>
+<span class="fc" id="L153">        Long userId = u.getId();</span>
+
+<span class="fc" id="L155">        Game game = gameRepository.findById(gameId).orElseThrow( </span>
+<span class="fc" id="L156">          ()-&gt;new EntityNotFoundException(&quot;Game&quot;, gameId));</span>
+
+<span class="fc" id="L158">        ensureUserCanAccessCourseLinkedGame(u, game);</span>
+
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        if (game.isHidden()) {</span>
+<span class="fc" id="L161">          throw new GameHiddenException(gameId);</span>
+        }
+
+<span class="fc" id="L164">        Farmer farmer = farmerRepository.findByGameIdAndUserId(gameId, userId)</span>
+<span class="fc" id="L165">        .orElseThrow(</span>
+<span class="fc" id="L166">            () -&gt; new EntityNotFoundException(Farmer.class, &quot;gameId&quot;, gameId, &quot;userId&quot;, userId));</span>
+
+
+<span class="fc bfc" id="L169" title="All 2 branches covered.">        if(farmer.getNumOfCows() &gt;= numCows ){</span>
+<span class="fc" id="L170">          double cowValue = game.getCowPrice() * farmer.getCowHealth() / 100;</span>
+<span class="fc" id="L171">          farmer.setTotalWealth(farmer.getTotalWealth() + (cowValue * numCows));</span>
+<span class="fc" id="L172">          farmer.setNumOfCows(farmer.getNumOfCows() - numCows);</span>
+<span class="fc" id="L173">          farmer.setCowsSold(farmer.getCowsSold() + numCows);</span>
+<span class="fc" id="L174">        }</span>
+        else{
+<span class="fc" id="L176">          throw new NoCowsException(&quot;You do not have enough cows to sell!&quot;);</span>
+        }
+
+<span class="fc" id="L179">        farmerRepository.save(farmer);</span>
+
+<span class="fc" id="L181">        farmerActivityService.recordActivityIfStudentMatch(</span>
+            u, game, farmer, FarmerActivity.ACTIVITY_TYPE_SELL, numCows);
+
+<span class="fc" id="L184">        String body = mapper.writeValueAsString(farmer);</span>
+<span class="fc" id="L185">        return ResponseEntity.ok().body(body);</span>
+  }
+
+  @Operation(summary = &quot;Sell cows from a herd&quot;)
+  @PreAuthorize(&quot;hasRole('ROLE_USER')&quot;)
+  @PutMapping(&quot;/sell/herd&quot;)
+  @Transactional
+  public ResponseEntity&lt;String&gt; sellCowsFromHerd(
+        @RequestParam Long gameId,
+        @RequestParam Long herdId,
+        @RequestParam int numCows)
+        throws NoCowsException, JsonProcessingException {
+<span class="fc" id="L197">    User u = getCurrentUser().getUser();</span>
+<span class="fc" id="L198">    Long userId = u.getId();</span>
+
+<span class="fc" id="L200">    Game game = gameRepository.findById(gameId).orElseThrow(</span>
+<span class="nc" id="L201">        () -&gt; new EntityNotFoundException(&quot;Game&quot;, gameId));</span>
+
+<span class="fc" id="L203">    ensureUserCanAccessCourseLinkedGame(u, game);</span>
+
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">    if (game.isHidden()) {</span>
+<span class="nc" id="L206">        throw new GameHiddenException(gameId);</span>
+    }
+
+<span class="fc" id="L209">    Farmer farmer = farmerRepository.findByGameIdAndUserId(gameId, userId)</span>
+<span class="pc" id="L210">        .orElseThrow(() -&gt; new EntityNotFoundException(</span>
+            Farmer.class, &quot;gameId&quot;, gameId, &quot;userId&quot;, userId));
+
+<span class="fc" id="L213">    CowHerd herd = cowHerdRepository.findById(herdId)</span>
+<span class="pc" id="L214">        .orElseThrow(() -&gt; new EntityNotFoundException(&quot;CowHerd&quot;, herdId));</span>
+
+<span class="fc bfc" id="L216" title="All 2 branches covered.">    if (herd.getFarmer().getUserId() != userId.longValue()</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">            || herd.getFarmer().getGameId() != gameId.longValue()) {</span>
+<span class="fc" id="L218">        throw new EntityNotFoundException(&quot;CowHerd&quot;, herdId);</span>
+    }
+
+<span class="pc bpc" id="L221" title="1 of 4 branches missed.">    if (numCows &lt;= 0 || numCows &gt; herd.getNumOfCows()</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">            || numCows &gt; farmer.getNumOfCows()) {</span>
+<span class="fc" id="L223">        throw new NoCowsException(&quot;You do not have enough cows to sell!&quot;);</span>
+    }
+
+<span class="fc" id="L226">    double cowValue = game.getCowPrice() * herd.getCowHealth() / 100;</span>
+
+<span class="fc" id="L228">    farmer.setTotalWealth(farmer.getTotalWealth() + cowValue * numCows);</span>
+<span class="fc" id="L229">    farmer.setNumOfCows(farmer.getNumOfCows() - numCows);</span>
+<span class="fc" id="L230">    farmer.setCowsSold(farmer.getCowsSold() + numCows);</span>
+
+<span class="fc" id="L232">    herd.setNumOfCows(herd.getNumOfCows() - numCows);</span>
+
+<span class="fc" id="L234">    cowHerdRepository.save(herd);</span>
+<span class="fc" id="L235">    farmerRepository.save(farmer);</span>
+
+<span class="fc" id="L237">    farmerActivityService.recordActivityIfStudentMatch(</span>
+        u, game, farmer, FarmerActivity.ACTIVITY_TYPE_SELL, numCows);
+
+<span class="fc" id="L240">    String body = mapper.writeValueAsString(farmer);</span>
+<span class="fc" id="L241">    return ResponseEntity.ok().body(body);</span>
+  }
+
+    @Operation(summary = &quot;Get all user game for a specific game&quot;)
+    @PreAuthorize(&quot;hasAnyRole('ROLE_USER', 'ROLE_ADMIN')&quot;)
+    @GetMapping(&quot;/game/all&quot;)
+    public List&lt;FarmerWithStudentStatus&gt; getFarmersByGameId(
+        @Parameter(name=&quot;gameId&quot;) @RequestParam Long gameId) {
+
+<span class="fc" id="L250">      Game game = gameRepository.findById(gameId)</span>
+<span class="fc" id="L251">          .orElseThrow(() -&gt; new EntityNotFoundException(&quot;Game&quot;, gameId));</span>
+
+<span class="fc" id="L253">      List&lt;FarmerWithStudentStatus&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">      for (Farmer farmer : farmerRepository.findByGameId(gameId)) {</span>
+<span class="fc" id="L255">        boolean isStudent = courseAccessService</span>
+<span class="fc" id="L256">            .findMatchingStudentForCourseLinkedGame(farmer.getUser(), game)</span>
+<span class="fc" id="L257">            .isPresent();</span>
+
+<span class="fc" id="L259">        result.add(FarmerWithStudentStatus.builder()</span>
+<span class="fc" id="L260">            .userId(farmer.getUserId())</span>
+<span class="fc" id="L261">            .gameId(farmer.getGameId())</span>
+<span class="fc" id="L262">            .username(farmer.getUsername())</span>
+<span class="fc" id="L263">            .totalWealth(farmer.getTotalWealth())</span>
+<span class="fc" id="L264">            .numOfCows(farmer.getNumOfCows())</span>
+<span class="fc" id="L265">            .cowHealth(farmer.getCowHealth())</span>
+<span class="fc" id="L266">            .cowsBought(farmer.getCowsBought())</span>
+<span class="fc" id="L267">            .cowsSold(farmer.getCowsSold())</span>
+<span class="fc" id="L268">            .cowDeaths(farmer.getCowDeaths())</span>
+<span class="fc" id="L269">            .student(isStudent)</span>
+<span class="fc" id="L270">            .build());</span>
+<span class="fc" id="L271">      }</span>
+<span class="fc" id="L272">      return result;</span>
+  }
+
+  private void ensureUserCanAccessCourseLinkedGame(User user, Game game) {
+<span class="fc bfc" id="L276" title="All 4 branches covered.">    if (game.getCourseId() != null &amp;&amp; !courseAccessService.isEligibleForGame(user, game)) {</span>
+<span class="fc" id="L277">      throw new NotEnrolledInCourseAssociatedWithGameException();</span>
+    }
+<span class="fc" id="L279">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
