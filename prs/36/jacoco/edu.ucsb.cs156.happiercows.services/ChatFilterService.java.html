@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ChatFilterService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">happycows</a> &gt; <a href="index.source.html" class="el_package">edu.ucsb.cs156.happiercows.services</a> &gt; <span class="el_source">ChatFilterService.java</span></div><h1>ChatFilterService.java</h1><pre class="source lang-java linenums">package edu.ucsb.cs156.happiercows.services;
+
+import edu.ucsb.cs156.happiercows.entities.ChatFilterWord;
+import edu.ucsb.cs156.happiercows.repositories.ChatFilterWordRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+/**
+ * Censors words and phrases on the admin-maintained filter list
+ * (see {@link ChatFilterWord}) in chat messages. See issue #19.
+ *
+ * &lt;ul&gt;
+ * &lt;li&gt;Matching ignores case.&lt;/li&gt;
+ * &lt;li&gt;Only whole words and phrases match: filtering &quot;ass&quot; does not
+ * censor &quot;class&quot;.&lt;/li&gt;
+ * &lt;li&gt;Each censored character becomes an asterisk, so the censored
+ * text keeps its length (&quot;darn&quot; becomes &quot;****&quot;). Whitespace inside a
+ * censored phrase is kept.&lt;/li&gt;
+ * &lt;li&gt;A phrase matches even if the message has extra whitespace
+ * between its words.&lt;/li&gt;
+ * &lt;/ul&gt;
+ */
+@Service
+<span class="fc" id="L31">public class ChatFilterService {</span>
+
+    /** Letters, digits, and underscore count as part of a word. */
+    private static final String WORD_CHAR = &quot;[\\p{L}\\p{N}_]&quot;;
+
+    @Autowired
+    private ChatFilterWordRepository chatFilterWordRepository;
+
+    /**
+     * Returns the message with every filtered word or phrase replaced by
+     * asterisks. A message with no filtered words is returned unchanged.
+     */
+    public String censor(String message) {
+        // Longest first, so a phrase like &quot;bad word&quot; is matched before
+        // a shorter entry like &quot;bad&quot; can claim part of it.
+<span class="fc" id="L46">        List&lt;String&gt; words = StreamSupport</span>
+<span class="fc" id="L47">                .stream(chatFilterWordRepository.findAll().spliterator(), false)</span>
+<span class="fc" id="L48">                .map(ChatFilterWord::getWord)</span>
+<span class="fc" id="L49">                .sorted(Comparator.comparingInt(String::length).reversed())</span>
+<span class="fc" id="L50">                .toList();</span>
+
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        if (words.isEmpty()) {</span>
+<span class="fc" id="L53">            return message;</span>
+        }
+
+<span class="fc" id="L56">        String alternatives = words.stream()</span>
+<span class="fc" id="L57">                .map(ChatFilterService::wordToRegex)</span>
+<span class="fc" id="L58">                .collect(Collectors.joining(&quot;|&quot;));</span>
+
+<span class="fc" id="L60">        Pattern pattern = Pattern.compile(</span>
+                &quot;(?&lt;!&quot; + WORD_CHAR + &quot;)(?:&quot; + alternatives + &quot;)(?!&quot; + WORD_CHAR + &quot;)&quot;,
+                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+
+<span class="fc" id="L64">        return pattern.matcher(message)</span>
+<span class="fc" id="L65">                .replaceAll(match -&gt; match.group().replaceAll(&quot;\\S&quot;, &quot;*&quot;));</span>
+    }
+
+    /**
+     * Converts a stored word or phrase into a regex that matches it
+     * literally, allowing any run of whitespace between its words.
+     * Stored words are already trimmed and single-spaced.
+     */
+    static String wordToRegex(String word) {
+<span class="fc" id="L74">        return Arrays.stream(word.split(&quot; &quot;))</span>
+<span class="fc" id="L75">                .map(Pattern::quote)</span>
+<span class="fc" id="L76">                .collect(Collectors.joining(&quot;\\s+&quot;));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
