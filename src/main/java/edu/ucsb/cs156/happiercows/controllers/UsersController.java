@@ -1,5 +1,8 @@
 package edu.ucsb.cs156.happiercows.controllers;
 
+import java.time.Duration;
+import java.time.Instant;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import edu.ucsb.cs156.happiercows.entities.User;
 import edu.ucsb.cs156.happiercows.errors.EntityNotFoundException;
+import edu.ucsb.cs156.happiercows.errors.InvalidCooldownDurationException;
 import edu.ucsb.cs156.happiercows.repositories.UserRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,7 +42,7 @@ public class UsersController extends ApiController {
         String body = mapper.writeValueAsString(users);
         return ResponseEntity.ok().body(body);
     }
-    
+
     @Operation(summary = "Suspend a user by id")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping("/suspend")
@@ -60,5 +64,48 @@ public class UsersController extends ApiController {
         user.setSuspended(false);
         userRepository.save(user);
         return genericMessage("User with id %d restored".formatted(userId));
+    }
+
+    @Operation(summary="Place a user on chat cooldown")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PostMapping("/cooldown")
+    public Object cooldownUser(
+            @Parameter(name="userId") @RequestParam long userId,
+            @Parameter(name="durationMinutes") @RequestParam long durationMinutes
+    ) throws InvalidCooldownDurationException {
+
+        if (durationMinutes <= 0) {
+            throw new InvalidCooldownDurationException(
+                "Cooldown duration must be greater than zero minutes"
+            );
+        }
+
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new EntityNotFoundException(User.class, userId));
+
+        Instant cooldownUntil = Instant.now().plus(Duration.ofMinutes(durationMinutes));
+        user.setCooldownUntil(cooldownUntil);
+        userRepository.save(user);
+
+        return genericMessage(
+            "User with id %d placed on cooldown for %d minutes"
+                .formatted(userId, durationMinutes)
+        );
+    }
+
+    @Operation(summary="Clear a user's chat cooldown")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PostMapping("/cooldown/clear")
+    public Object clearCooldown(
+            @Parameter(name="userId") @RequestParam long userId
+    ) {
+
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new EntityNotFoundException(User.class, userId));
+
+        user.setCooldownUntil(null);
+        userRepository.save(user);
+
+        return genericMessage("Cooldown cleared for user with id %d".formatted(userId));
     }
 }

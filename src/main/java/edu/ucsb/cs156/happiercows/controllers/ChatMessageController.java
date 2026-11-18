@@ -24,7 +24,9 @@ import edu.ucsb.cs156.happiercows.repositories.FarmerRepository;
 
 import org.springframework.security.core.Authentication;
 
-
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 
 @Tag(name = "Chat Message")
@@ -121,6 +123,26 @@ public class ChatMessageController extends ApiController{
             if(!farmer.getGame().isShowChat()){
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
+        }
+
+        // Check whether the user is currently on chat cooldown
+        Instant cooldownUntil = user.getCooldownUntil();
+        Instant now = Instant.now();
+
+        if (cooldownUntil != null && cooldownUntil.isAfter(now)) {
+            Duration remaining = Duration.between(now, cooldownUntil);
+
+            long minutes = remaining.toMinutes();
+            long seconds = remaining.toSecondsPart();
+
+            String message = "You are on chat cooldown. Please wait "
+                    + minutes + " minutes and " + seconds
+                    + " seconds before sending another message.";
+
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of(
+                            "type", "ChatCooldown",
+                            "message", message));
         }
 
         // Create the chat message

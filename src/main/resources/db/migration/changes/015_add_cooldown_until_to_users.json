@@ -1,0 +1,40 @@
+{
+  "databaseChangeLog": [
+    {
+      "changeSet": {
+        "id": "015-Add-Cooldown-Until-To-Users",
+        "author": "student",
+        "preConditions": [
+          {
+            "onFail": "MARK_RAN"
+          },
+          {
+            "not": [
+              {
+                "columnExists": {
+                  "tableName": "USERS",
+                  "columnName": "COOLDOWN_UNTIL"
+                }
+              }
+            ]
+          }
+        ],
+        "changes": [
+          {
+            "addColumn": {
+              "tableName": "USERS",
+              "columns": [
+                {
+                  "column": {
+                    "name": "COOLDOWN_UNTIL",
+                    "type": "TIMESTAMP WITH TIME ZONE"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
