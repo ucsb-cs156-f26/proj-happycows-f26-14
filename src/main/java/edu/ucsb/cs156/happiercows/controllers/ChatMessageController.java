@@ -21,10 +21,13 @@ import edu.ucsb.cs156.happiercows.repositories.ChatMessageRepository;
 import edu.ucsb.cs156.happiercows.entities.User;
 import edu.ucsb.cs156.happiercows.entities.Farmer;
 import edu.ucsb.cs156.happiercows.repositories.FarmerRepository;
+import edu.ucsb.cs156.happiercows.services.ChatFilterService;
 
 import org.springframework.security.core.Authentication;
 
-
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 
 @Tag(name = "Chat Message")
@@ -38,6 +41,9 @@ public class ChatMessageController extends ApiController{
 
     @Autowired
     private FarmerRepository farmerRepository;
+
+    @Autowired
+    private ChatFilterService chatFilterService;
 
     @Autowired
     ObjectMapper mapper;
@@ -123,11 +129,31 @@ public class ChatMessageController extends ApiController{
             }
         }
 
-        // Create the chat message
+        // Check whether the user is currently on chat cooldown
+        Instant cooldownUntil = user.getCooldownUntil();
+        Instant now = Instant.now();
+
+        if (cooldownUntil != null && cooldownUntil.isAfter(now)) {
+            Duration remaining = Duration.between(now, cooldownUntil);
+
+            long minutes = remaining.toMinutes();
+            long seconds = remaining.toSecondsPart();
+
+            String message = "You are on chat cooldown. Please wait "
+                    + minutes + " minutes and " + seconds
+                    + " seconds before sending another message.";
+
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of(
+                            "type", "ChatCooldown",
+                            "message", message));
+        }
+
+        // Create the chat message, censoring any words on the filter list
         ChatMessage chatMessage = ChatMessage.builder()
         .gameId(gameId)
         .userId(userId)
-        .message(content)
+        .message(chatFilterService.censor(content))
         .hidden(false)
         .dm(false)
         .toUserId(0)
