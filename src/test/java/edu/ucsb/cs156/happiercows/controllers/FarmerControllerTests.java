@@ -338,6 +338,131 @@ public class FarmerControllerTests extends ControllerTestCase {
 
     @WithMockUser(roles = {"USER"})
     @Test
+    public void test_SellCowsFromHerd() throws Exception {
+
+        // arrange
+        testGame.setId(1L);
+
+        Farmer farmer = getTestFarmer();
+        farmer.setNumOfCows(5);
+
+        CowHerd herd = CowHerd.builder()
+                .id(10L)
+                .farmer(farmer)
+                .numOfCows(5)
+                .cowHealth(80)
+                .build();
+
+        when(gameRepository.findById(1L))
+                .thenReturn(Optional.of(testGame));
+        when(farmerRepository.findByGameIdAndUserId(1L, 1L))
+                .thenReturn(Optional.of(farmer));
+        when(cowHerdRepository.findById(10L))
+                .thenReturn(Optional.of(herd));
+
+        // act
+        MvcResult response = mockMvc.perform(
+                put("/api/farmer/sell/herd?gameId=1&herdId=10&numCows=2")
+                        .with(csrf()))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        // assert
+        assertEquals(3, herd.getNumOfCows());
+        assertEquals(3, farmer.getNumOfCows());
+        assertEquals(2, farmer.getCowsSold());
+        assertEquals(316.0, farmer.getTotalWealth());
+
+        verify(cowHerdRepository, times(1)).save(herd);
+        verify(farmerRepository, times(1)).save(farmer);
+    }
+
+    @WithMockUser(roles = {"USER"})
+    @Test
+    public void test_SellCowsFromHerd_notEnoughCows() throws Exception {
+
+        // arrange
+        testGame.setId(1L);
+
+        Farmer farmer = getTestFarmer();
+        farmer.setNumOfCows(5);
+
+        CowHerd herd = CowHerd.builder()
+                .id(10L)
+                .farmer(farmer)
+                .numOfCows(5)
+                .cowHealth(100)
+                .build();
+
+        when(gameRepository.findById(1L))
+                .thenReturn(Optional.of(testGame));
+        when(farmerRepository.findByGameIdAndUserId(1L, 1L))
+                .thenReturn(Optional.of(farmer));
+        when(cowHerdRepository.findById(10L))
+                .thenReturn(Optional.of(herd));
+
+        // act
+        mockMvc.perform(
+                put("/api/farmer/sell/herd?gameId=1&herdId=10&numCows=6")
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+
+        // assert
+        assertEquals(5, herd.getNumOfCows());
+        assertEquals(5, farmer.getNumOfCows());
+        assertEquals(300, farmer.getTotalWealth());
+
+        verify(cowHerdRepository, never()).save(any(CowHerd.class));
+        verify(farmerRepository, never()).save(any(Farmer.class));
+    }
+   @WithMockUser(roles = {"USER"})
+   @Test
+    public void test_SellCowsFromHerd_wrongFarmer() throws Exception {
+
+        // arrange
+        testGame.setId(1L);
+
+        Farmer farmer = getTestFarmer();
+        farmer.setNumOfCows(5);
+
+        User otherUser = User.builder().id(2L).build();
+        Farmer otherFarmer = Farmer.builder()
+                .user(otherUser)
+                .game(testGame)
+                .build();
+
+        CowHerd herd = CowHerd.builder()
+                .id(10L)
+                .farmer(otherFarmer)
+                .numOfCows(5)
+                .cowHealth(100)
+                .build();
+
+        when(gameRepository.findById(1L))
+                .thenReturn(Optional.of(testGame));
+        when(farmerRepository.findByGameIdAndUserId(1L, 1L))
+                .thenReturn(Optional.of(farmer));
+        when(cowHerdRepository.findById(10L))
+                .thenReturn(Optional.of(herd));
+
+        // act
+        mockMvc.perform(
+                put("/api/farmer/sell/herd?gameId=1&herdId=10&numCows=2")
+                        .with(csrf()))
+                .andExpect(status().isNotFound());
+
+        // assert
+        assertEquals(5, herd.getNumOfCows());
+        assertEquals(5, farmer.getNumOfCows());
+        assertEquals(300, farmer.getTotalWealth());
+
+        verify(cowHerdRepository, never()).save(any(CowHerd.class));
+        verify(farmerRepository, never()).save(any(Farmer.class));
+   }       
+
+
+    @WithMockUser(roles = {"USER"})
+    @Test
     public void test_buyCow_for_user_not_in_game() throws Exception {
         when(gameRepository.findById(234L)).thenReturn(Optional.of(testGame));
         when(farmerRepository.findByGameIdAndUserId(eq(1L), eq(1L))).thenReturn(Optional.empty());
