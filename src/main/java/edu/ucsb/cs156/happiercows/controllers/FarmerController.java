@@ -175,16 +175,8 @@ public class FarmerController extends ApiController {
         else{
           throw new NoCowsException("You do not have enough cows to sell!");
         }
+
         farmerRepository.save(farmer);
-
-        CowHerd herd = CowHerd.builder()
-        .farmer(farmer)
-        .numOfCows(numCows)
-        .cowHealth(100)
-        .build();
-
-        cowHerdRepository.save(herd);
-
 
         farmerActivityService.recordActivityIfStudentMatch(
             u, game, farmer, FarmerActivity.ACTIVITY_TYPE_SELL, numCows);
