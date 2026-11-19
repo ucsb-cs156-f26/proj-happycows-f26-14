@@ -284,8 +284,23 @@ public class FarmerControllerTests extends ControllerTestCase {
                 .isEligibleForGame(any(User.class), eq(testGame));
         }
 
+        @WithMockUser(roles = {"USER"})
+        @Test
+        public void test_getFarmerHerds_hiddenGame() throws Exception {
 
+        // arrange
+        testGame.setHidden(true);
 
+        when(gameRepository.findById(eq(1L)))
+                .thenReturn(Optional.of(testGame));
+
+        // act
+        mockMvc.perform(get("/api/farmer/herds?gameId=1"))
+                .andExpect(status().is4xxClientError());
+
+        // assert
+        verify(gameRepository, times(1)).findById(eq(1L));
+}
 
 
 
