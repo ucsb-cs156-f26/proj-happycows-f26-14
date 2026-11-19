@@ -23,7 +23,6 @@ describe("ManageCows tests", () => {
   const mockSetMessage = vi.fn();
   const mockOpenModal = vi.fn();
 
-  
   test("renders without crashing", () => {
     useParams.mockReturnValue({ userId: 1 });
 
