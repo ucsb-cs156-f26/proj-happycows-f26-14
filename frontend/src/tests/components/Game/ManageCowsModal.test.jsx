@@ -6,6 +6,7 @@ import { vi } from "vitest";
 import "@testing-library/jest-dom";
 
 const mockToast = vi.fn();
+
 vi.mock("react-toastify", async () => {
   const originalModule = await vi.importActual("react-toastify");
   return {
@@ -23,6 +24,7 @@ describe("ManageCowsModal", () => {
   const mockSetNumber = vi.fn();
   const mockOnBuy = vi.fn();
   const mockOnSell = vi.fn();
+
   window.alert = vi.fn();
 
   beforeEach(() => {
@@ -92,6 +94,7 @@ describe("ManageCowsModal", () => {
     );
 
     fireEvent.click(screen.getByTestId("buy-sell-cow-modal-close"));
+
     expect(mockOnClose).toHaveBeenCalled();
     expect(mockSetNumber).toHaveBeenCalledWith(1);
   });
@@ -107,12 +110,14 @@ describe("ManageCowsModal", () => {
     );
 
     fireEvent.click(screen.getByTestId("buy-sell-cow-modal-cancel"));
+
     expect(mockOnClose).toHaveBeenCalled();
     expect(mockSetNumber).toHaveBeenCalledWith(1);
   });
 
   test("calls onBuy with correct arguments when buy button is clicked", async () => {
     const number = 5;
+
     render(
       <ManageCowsModal
         isOpen={true}
@@ -137,6 +142,7 @@ describe("ManageCowsModal", () => {
 
   test("calls onSell with correct arguments when sell button is clicked", async () => {
     const number2 = 3;
+
     render(
       <ManageCowsModal
         isOpen={true}
@@ -149,9 +155,11 @@ describe("ManageCowsModal", () => {
         herds={[{ id: 10, numOfCows: 5, cowHealth: 100 }]}
       />,
     );
+
     fireEvent.change(screen.getByTestId("sell-herd-select"), {
       target: { value: "10" },
     });
+
     fireEvent.click(screen.getByTestId("buy-sell-cow-modal-submit"));
 
     await waitFor(() =>
@@ -264,6 +272,7 @@ describe("ManageCowsModal", () => {
     const input = screen.getByTestId("buy-sell-cow-modal-input");
 
     fireEvent.change(input, { target: { value: "-3" } });
+
     expect(mockSetNumber).toHaveBeenCalledWith("-3");
     expect(mockToast).toHaveBeenCalledWith(
       "Warning: You cannot buy a negative number of cows!",
@@ -283,6 +292,7 @@ describe("ManageCowsModal", () => {
     const input = screen.getByTestId("buy-sell-cow-modal-input");
 
     fireEvent.change(input, { target: { value: "-3" } });
+
     expect(mockSetNumber).toHaveBeenCalledWith("-3");
     expect(mockToast).toHaveBeenCalledWith(
       "Warning: You cannot sell a negative number of cows!",
@@ -302,6 +312,7 @@ describe("ManageCowsModal", () => {
     const input = screen.getByTestId("buy-sell-cow-modal-input");
 
     fireEvent.change(input, { target: { value: "0" } });
+
     expect(mockSetNumber).toHaveBeenCalledWith("0");
     expect(mockToast).not.toHaveBeenCalledWith(
       "Warning: You cannot buy a negative number of cows!",
@@ -321,6 +332,7 @@ describe("ManageCowsModal", () => {
     const input = screen.getByTestId("buy-sell-cow-modal-input");
 
     fireEvent.change(input, { target: { value: "0" } });
+
     expect(mockSetNumber).toHaveBeenCalledWith("0");
     expect(mockToast).not.toHaveBeenCalledWith(
       "Warning: You cannot sell a negative number of cows!",
@@ -340,6 +352,7 @@ describe("ManageCowsModal", () => {
     const input = screen.getByTestId("buy-sell-cow-modal-input");
 
     fireEvent.change(input, { target: { value: "10" } });
+
     expect(mockSetNumber).toHaveBeenCalledWith("10");
   });
 
@@ -361,12 +374,15 @@ describe("ManageCowsModal", () => {
     expect(screen.getByTestId("buy-sell-cow-modal-input")).toHaveStyle(
       "width: 20%",
     );
+
     expect(screen.getByTestId("buy-sell-cow-modal-close")).toHaveStyle(
       "color: rgb(0, 0, 0); border-color: #fff; background-color: rgb(255, 255, 255);",
     );
+
     expect(screen.getByTestId("buy-sell-cow-modal-close").style.color).toBe(
       "rgb(0, 0, 0)",
     );
+
     expect(screen.getByTestId("buy-sell-cow-modal-closeGroup")).toHaveStyle(
       "display: flex; justify-content: right",
     );
@@ -394,6 +410,7 @@ describe("ManageCowsModal", () => {
     );
     expect(mockOnBuy).not.toHaveBeenCalled();
   });
+
   test("shows a warning and does not sell fractional cows", () => {
     const number = 1.2;
 
@@ -415,5 +432,124 @@ describe("ManageCowsModal", () => {
       "You cannot sell a fraction of a cow! Please enter a whole number.",
     );
     expect(mockOnSell).not.toHaveBeenCalled();
+  });
+
+  test("buy modal does not display a herd dropdown", () => {
+    render(
+      <ManageCowsModal
+        isOpen={true}
+        onClose={mockOnClose}
+        message="buy"
+        number={2}
+        setNumber={mockSetNumber}
+        herds={[{ id: 10, numOfCows: 5, cowHealth: 100 }]}
+      />,
+    );
+
+    expect(screen.queryByTestId("sell-herd-select")).not.toBeInTheDocument();
+  });
+
+  test("sell modal uses an empty herd list when herds prop is omitted", () => {
+    render(
+      <ManageCowsModal
+        isOpen={true}
+        onClose={mockOnClose}
+        message="sell"
+        number={2}
+        setNumber={mockSetNumber}
+        onSell={mockOnSell}
+      />,
+    );
+
+    const select = screen.getByTestId("sell-herd-select");
+
+    expect(select.options).toHaveLength(1);
+    expect(select.options[0].value).toBe("");
+    expect(select.options[0]).toHaveTextContent("Choose a herd");
+  });
+
+  test("sell dropdown filters out zero and negative cow herds", () => {
+    const herds = [
+      { id: 10, numOfCows: 0, cowHealth: 100 },
+      { id: 11, numOfCows: -2, cowHealth: 50 },
+      { id: 12, numOfCows: 4, cowHealth: 90 },
+      { id: 13, numOfCows: 1, cowHealth: 75 },
+    ];
+
+    render(
+      <ManageCowsModal
+        isOpen={true}
+        onClose={mockOnClose}
+        message="sell"
+        farmer={farmerFixtures.oneFarmer[0]}
+        number={1}
+        setNumber={mockSetNumber}
+        onSell={mockOnSell}
+        herds={herds}
+      />,
+    );
+
+    const select = screen.getByTestId("sell-herd-select");
+
+    expect(Array.from(select.options, (option) => option.value)).toEqual([
+      "",
+      "12",
+      "13",
+    ]);
+
+    expect(select.options[1]).toHaveTextContent(/Herd 12.*4 cows.*90% health/);
+    expect(select.options[2]).toHaveTextContent(/Herd 13.*1 cows.*75% health/);
+
+    fireEvent.change(select, { target: { value: "13" } });
+    fireEvent.click(screen.getByTestId("buy-sell-cow-modal-submit"));
+
+    expect(mockOnSell).toHaveBeenCalledWith(farmerFixtures.oneFarmer[0], 1, 13);
+  });
+
+  test("buying zero cows displays the exact warning and does not submit", () => {
+    render(
+      <ManageCowsModal
+        isOpen={true}
+        onClose={mockOnClose}
+        message="buy"
+        farmer={farmerFixtures.oneFarmer[0]}
+        number={0}
+        setNumber={mockSetNumber}
+        onBuy={mockOnBuy}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("buy-sell-cow-modal-submit"));
+
+    expect(window.alert).toHaveBeenCalledWith("You must buy at least one cow!");
+    expect(mockOnBuy).not.toHaveBeenCalled();
+    expect(mockOnClose).not.toHaveBeenCalled();
+  });
+
+  test("selling zero cows displays the exact warning and does not submit", () => {
+    render(
+      <ManageCowsModal
+        isOpen={true}
+        onClose={mockOnClose}
+        message="sell"
+        farmer={farmerFixtures.oneFarmer[0]}
+        number={0}
+        setNumber={mockSetNumber}
+        onSell={mockOnSell}
+        herds={[{ id: 10, numOfCows: 5, cowHealth: 100 }]}
+      />,
+    );
+
+    fireEvent.change(screen.getByTestId("sell-herd-select"), {
+      target: { value: "10" },
+    });
+
+    fireEvent.click(screen.getByTestId("buy-sell-cow-modal-submit"));
+
+    expect(window.alert).toHaveBeenCalledWith(
+      "You must sell at least one cow!",
+    );
+    expect(mockOnSell).not.toHaveBeenCalled();
+    expect(mockOnClose).not.toHaveBeenCalled();
   });
 });
