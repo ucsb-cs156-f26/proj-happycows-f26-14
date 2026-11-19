@@ -77,6 +77,19 @@ public class UpdateCowHealthJob implements JobContextConsumer {
         }
     }
 
+    public static void calculateHerdDeaths(CowHerd herd, Farmer farmer, JobContext ctx) {
+        if (herd.getCowHealth() == 0.0 && herd.getNumOfCows() > 0) {
+            int deadCows = herd.getNumOfCows();
+
+            farmer.setCowDeaths(farmer.getCowDeaths() + deadCows);
+            farmer.setNumOfCows(farmer.getNumOfCows() - deadCows);
+            herd.setNumOfCows(0);
+
+            ctx.log(" " + deadCows + " cows from herd " + herd.getId() + " died.");
+        }
+    }
+
+
     public static void runUpdateJobInGame(Game game, GamePlus gamePlus, GamePlusBuilderService gamePlusBuilderService, GameRepository gameRepository, FarmerRepository farmerRepository, CowHerdRepository cowHerdRepository, JobContext ctx) {
         ctx.log("Game " + game.getName() + ", degradationRate: " + game.getDegradationRate() + ", effectiveCapacity: " + gamePlus.getEffectiveCapacity());
 
@@ -96,36 +109,49 @@ public class UpdateCowHealthJob implements JobContextConsumer {
             var cowHealthUpdateStrategy = isAboveCapacity ? game.getAboveCapacityHealthUpdateStrategy() : game.getBelowCapacityHealthUpdateStrategy();
 
             for (Farmer farmer : allFarmer) {
-                User user = farmer.getUser();
+            User user = farmer.getUser();
 
-                var newCowHealth = calculateNewCowHealthUsingStrategy(cowHealthUpdateStrategy, gamePlusBuilderService.toGamePlus(game), farmer, totalCows);
-                ctx.log("User: " + user.getFullName() + ", numCows: " + farmer.getNumOfCows() + ", cowHealth: " + farmer.getCowHealth());
+            var herds = cowHerdRepository.findByFarmer_Id_UserIdAndFarmer_Id_GameId(
+                farmer.getUserId(), game.getId());
 
-                double oldHealth = farmer.getCowHealth();
-                farmer.setCowHealth(newCowHealth);
-                calculateCowDeaths(farmer, ctx);
-
-                ctx.log(" old cow health: " + oldHealth + ", new cow health: " + farmer.getCowHealth());
-                farmerRepository.save(farmer);
-
-                for (CowHerd herd : cowHerdRepository.findByFarmer_Id_UserIdAndFarmer_Id_GameId(
-                    farmer.getUserId(), game.getId())) {
-
-                Farmer herdFarmer = Farmer.builder()
-                .cowHealth(herd.getCowHealth())
-                .build();
-
-                double newHerdHealth = calculateNewCowHealthUsingStrategy(
+            var newCowHealth = calculateNewCowHealthUsingStrategy(
                 cowHealthUpdateStrategy,
                 gamePlusBuilderService.toGamePlus(game),
-                herdFarmer,
+                farmer,
                 totalCows);
 
+            ctx.log("User: " + user.getFullName() + ", numCows: " + farmer.getNumOfCows()
+                + ", cowHealth: " + farmer.getCowHealth());
+
+            double oldHealth = farmer.getCowHealth();
+            farmer.setCowHealth(newCowHealth);
+
+            if (herds.iterator().hasNext()) {
+            for (CowHerd herd : herds) {
+                Farmer herdFarmer = Farmer.builder()
+                    .cowHealth(herd.getCowHealth())
+                    .build();
+
+                double newHerdHealth = calculateNewCowHealthUsingStrategy(
+                    cowHealthUpdateStrategy,
+                    gamePlusBuilderService.toGamePlus(game),
+                    herdFarmer,
+                    totalCows);
+
                 herd.setCowHealth(newHerdHealth);
+                calculateHerdDeaths(herd, farmer, ctx);
                 cowHerdRepository.save(herd);
             }
+            } else {
+                calculateCowDeaths(farmer, ctx);
+            }
 
+        ctx.log(" old cow health: " + oldHealth
+            + ", new cow health: " + farmer.getCowHealth());
+
+        farmerRepository.save(farmer);
         }
 
     }
+
 }
