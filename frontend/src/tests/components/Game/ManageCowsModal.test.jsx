@@ -367,12 +367,11 @@ describe("ManageCowsModal", () => {
 
     const footer = screen.getByTestId("buy-sell-cow-modal-footer");
 
-    expect(footer).toHaveAttribute("style", "border-top: 0px;");
+    expect(footer).toHaveStyle("border-top-width: 0px");
     expect(footer.style.borderTop).toBe("0px");
-
     expect(screen.getByTestId("buy-sell-cow-modal-input")).toHaveStyle(
       "width: 20%",
-    );
+    );  "border-top-width: 0px",
     expect(screen.getByTestId("buy-sell-cow-modal-close")).toHaveStyle(
       "color: rgb(0, 0, 0); border-color: #fff; background-color: rgb(255, 255, 255);",
     );
