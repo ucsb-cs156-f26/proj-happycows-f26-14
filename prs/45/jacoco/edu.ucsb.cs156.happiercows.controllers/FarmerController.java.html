@@ -109,8 +109,8 @@ import edu.ucsb.cs156.happiercows.repositories.CowHerdRepository;
 
 <span class="fc" id="L110">    ensureUserCanAccessCourseLinkedGame(user, game);</span>
 
-<span class="pc bpc" id="L112" title="1 of 2 branches missed.">    if (game.isHidden()) {</span>
-<span class="nc" id="L113">      throw new GameHiddenException(gameId);</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">    if (game.isHidden()) {</span>
+<span class="fc" id="L113">      throw new GameHiddenException(gameId);</span>
     }
 
 <span class="fc" id="L116">    farmerRepository.findByGameIdAndUserId(gameId, userId)</span>
