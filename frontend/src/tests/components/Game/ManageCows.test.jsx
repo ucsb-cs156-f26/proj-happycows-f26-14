@@ -73,7 +73,9 @@ describe("ManageCows tests", () => {
     expect(screen.getByText("🛒 Purchase Fee: $1 per cow")).toBeInTheDocument();
     expect(screen.getByText("💰 Selling Fee: $2 per cow")).toBeInTheDocument();
     const note = screen.getByText("Note:").parentElement;
-    const firstListItem = within(note).getByText(/Buying cows costs the current cow price/,);
+    const firstListItem = within(note).getByText(
+      /Buying cows costs the current cow price/,
+    );
     expect(note.textContent).toContain("Note:");
     expect(firstListItem.textContent).toMatch(/^ Buying cows costs/);
   });

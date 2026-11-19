@@ -10,6 +10,7 @@ const ManageCowsModal = ({
   onClose,
   message,
   farmer,
+  game,
   onBuy,
   onSell,
 }) => {
@@ -88,6 +89,18 @@ const ManageCowsModal = ({
               min="1"
             />
           </Form.Group>
+          {message.includes("buy") ? (
+            <p className="mt-3">
+              <strong>Purchase fee:</strong> ${game?.purchaseFee ?? 0} per cow.
+              This fee will be charged for each cow you buy.
+            </p>
+          ) : (
+            <p className="mt-3">
+              <strong>Selling fee:</strong> ${game?.sellingFee ?? 0} per cow.
+              This fee will be deducted from the amount you receive for each cow
+              sold.
+            </p>
+          )}
         </Form>
       </Modal.Body>
       <Modal.Footer
