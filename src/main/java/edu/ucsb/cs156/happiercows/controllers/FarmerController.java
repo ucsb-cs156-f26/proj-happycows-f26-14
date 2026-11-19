@@ -35,7 +35,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PutMapping;
-
+import org.springframework.transaction.annotation.Transactional;
 
 import edu.ucsb.cs156.happiercows.entities.CowHerd;
 import edu.ucsb.cs156.happiercows.repositories.CowHerdRepository;
@@ -183,9 +183,63 @@ public class FarmerController extends ApiController {
 
         String body = mapper.writeValueAsString(farmer);
         return ResponseEntity.ok().body(body);
+  }
+
+  @Operation(summary = "Sell cows from a herd")
+  @PreAuthorize("hasRole('ROLE_USER')")
+  @PutMapping("/sell/herd")
+  @Transactional
+  public ResponseEntity<String> sellCowsFromHerd(
+        @RequestParam Long gameId,
+        @RequestParam Long herdId,
+        @RequestParam int numCows)
+        throws NoCowsException, JsonProcessingException {
+    User u = getCurrentUser().getUser();
+    Long userId = u.getId();
+
+    Game game = gameRepository.findById(gameId).orElseThrow(
+        () -> new EntityNotFoundException("Game", gameId));
+
+    ensureUserCanAccessCourseLinkedGame(u, game);
+
+    if (game.isHidden()) {
+        throw new GameHiddenException(gameId);
     }
 
-    
+    Farmer farmer = farmerRepository.findByGameIdAndUserId(gameId, userId)
+        .orElseThrow(() -> new EntityNotFoundException(
+            Farmer.class, "gameId", gameId, "userId", userId));
+
+    CowHerd herd = cowHerdRepository.findById(herdId)
+        .orElseThrow(() -> new EntityNotFoundException("CowHerd", herdId));
+
+    if (herd.getFarmer().getUserId() != userId.longValue()
+            || herd.getFarmer().getGameId() != gameId.longValue()) {
+        throw new EntityNotFoundException("CowHerd", herdId);
+    }
+
+    if (numCows <= 0 || numCows > herd.getNumOfCows()
+            || numCows > farmer.getNumOfCows()) {
+        throw new NoCowsException("You do not have enough cows to sell!");
+    }
+
+    double cowValue = game.getCowPrice() * herd.getCowHealth() / 100;
+
+    farmer.setTotalWealth(farmer.getTotalWealth() + cowValue * numCows);
+    farmer.setNumOfCows(farmer.getNumOfCows() - numCows);
+    farmer.setCowsSold(farmer.getCowsSold() + numCows);
+
+    herd.setNumOfCows(herd.getNumOfCows() - numCows);
+
+    cowHerdRepository.save(herd);
+    farmerRepository.save(farmer);
+
+    farmerActivityService.recordActivityIfStudentMatch(
+        u, game, farmer, FarmerActivity.ACTIVITY_TYPE_SELL, numCows);
+
+    String body = mapper.writeValueAsString(farmer);
+    return ResponseEntity.ok().body(body);
+  }
 
     @Operation(summary = "Get all user game for a specific game")
     @PreAuthorize("hasAnyRole('ROLE_USER', 'ROLE_ADMIN')")
