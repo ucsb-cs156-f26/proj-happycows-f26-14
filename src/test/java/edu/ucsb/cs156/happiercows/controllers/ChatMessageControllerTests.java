@@ -7,12 +7,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 
 import edu.ucsb.cs156.happiercows.repositories.UserRepository;
 import edu.ucsb.cs156.happiercows.testconfig.TestConfig;
 import edu.ucsb.cs156.happiercows.entities.User;
 import edu.ucsb.cs156.happiercows.models.CurrentUser;
+import edu.ucsb.cs156.happiercows.services.ChatFilterService;
 import edu.ucsb.cs156.happiercows.services.CurrentUserService;
+import org.mockito.ArgumentCaptor;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import java.util.Arrays;
@@ -64,6 +67,9 @@ public class ChatMessageControllerTests extends ControllerTestCase {
     @MockBean
     CurrentUserService mockCurrentUserService;
 
+    @MockBean
+    ChatFilterService chatFilterService;
+
     @Autowired
     ObjectMapper mapper;
 
@@ -75,6 +81,11 @@ public class ChatMessageControllerTests extends ControllerTestCase {
 
         when(mockCurrentUserService.getCurrentUser())
                 .thenReturn(CurrentUser.builder().user(user).build());
+
+        // By default nothing is filtered; censoring has its own tests below
+        // and in ChatFilterServiceTests.
+        when(chatFilterService.censor(anyString()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     private void setCurrentUserCooldown(Instant cooldownUntil) {
@@ -344,6 +355,33 @@ public class ChatMessageControllerTests extends ControllerTestCase {
         String expectedResponseString = mapper.writeValueAsString(chatMessage);
         log.info("Got back from API: {}",responseString);
         assertEquals(expectedResponseString, responseString);
+    }
+
+    @WithMockUser(roles = {"USER"})
+    @Test
+    public void postedChatMessageIsCensoredBeforeSaving() throws Exception {
+
+        // arrange
+        Long gameId = 1L;
+        Long userId = 1L;
+        String content = "You darn cow!";
+
+        when(chatFilterService.censor(content)).thenReturn("You **** cow!");
+
+        Farmer farmer = Farmer.builder()
+                .game(Game.builder().showChat(true).build())
+                .build();
+        when(farmerRepository.findByGameIdAndUserId(gameId, userId)).thenReturn(Optional.of(farmer));
+
+        //act
+        mockMvc.perform(post("/api/chat/post?gameId={gameId}&content={content}", gameId, content).with(csrf()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("You **** cow!"));
+
+        // assert
+        ArgumentCaptor<ChatMessage> captor = ArgumentCaptor.forClass(ChatMessage.class);
+        verify(chatMessageRepository, times(1)).save(captor.capture());
+        assertEquals("You **** cow!", captor.getValue().getMessage());
     }
 
     @WithMockUser(roles = {"USER"})
