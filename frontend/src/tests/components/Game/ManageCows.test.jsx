@@ -23,8 +23,9 @@ describe("ManageCows tests", () => {
   const mockSetMessage = vi.fn();
   const mockOpenModal = vi.fn();
 
+  
   test("renders without crashing", () => {
-    useParams.mockReturnValue({ userId: 1 }); // Replace with your desired mock values
+    useParams.mockReturnValue({ userId: 1 });
 
     currentUserModule.useCurrentUser.mockReturnValue({
       data: {},
@@ -43,6 +44,35 @@ describe("ManageCows tests", () => {
         />
       </QueryClientProvider>,
     );
+  });
+
+  test("displays purchase and selling fees", () => {
+    useParams.mockReturnValue({ userId: undefined });
+
+    currentUserModule.useCurrentUser.mockReturnValue({
+      data: {},
+    });
+
+    currentUserModule.hasRole.mockReturnValue(false);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ManageCows
+          farmer={farmerFixtures.oneFarmer[0]}
+          game={{
+            cowPrice: 100,
+            purchaseFee: 1,
+            sellingFee: 2,
+            milkPrice: 5,
+          }}
+          setMessage={mockSetMessage}
+          openModal={mockOpenModal}
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText("🛒 Purchase Fee: $1 per cow")).toBeInTheDocument();
+    expect(screen.getByText("💰 Selling Fee: $2 per cow")).toBeInTheDocument();
   });
 
   test("renders message when admin visit other pages", async () => {
