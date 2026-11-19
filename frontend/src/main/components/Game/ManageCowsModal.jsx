@@ -12,7 +12,7 @@ const ManageCowsModal = ({
   farmer,
   onBuy,
   onSell,
-  herds = [],
+  herds,
 }) => {
   const [selectedHerdId, setSelectedHerdId] = React.useState("");
   const handleInputChange = (e) => {
@@ -111,14 +111,14 @@ const ManageCowsModal = ({
                 onChange={(e) => setSelectedHerdId(e.target.value)}
               >
                 <option value="">Choose a herd</option>
-                {herds
-                  .filter((herd) => herd.numOfCows > 0)
-                  .map((herd) => (
+                {(herds?.filter((herd) => herd.numOfCows > 0) ?? []).map(
+                  (herd) => (
                     <option key={herd.id} value={herd.id}>
                       Herd {herd.id} - {herd.numOfCows} cows - {herd.cowHealth}%
                       health
                     </option>
-                  ))}
+                  ),
+                )}
               </Form.Control>
             </Form.Group>
           )}
