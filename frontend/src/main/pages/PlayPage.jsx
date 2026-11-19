@@ -11,6 +11,7 @@ import Profits from "main/components/Game/Profits";
 import { useBackend, useBackendMutation } from "main/utils/useBackend";
 import { hasRole } from "main/utils/currentUser";
 import { useCurrentUser } from "main/utils/currentUser";
+import { useQueryClient } from "react-query";
 import Background from "../../assets/PlayPageBackground.jpg";
 import ChatPanel from "main/components/Chat/ChatPanel";
 import ManageCowsModal from "main/components/Game/ManageCowsModal";
@@ -21,6 +22,15 @@ export default function PlayPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [message, setMessage] = useState();
   const [numCows, setNumCows] = useState(1);
+
+  const queryClient = useQueryClient();
+
+  const invalidateFarmerData = () => {
+    queryClient.invalidateQueries([
+      `/api/farmer/forcurrentuser?gameId=${gameId}`,
+    ]);
+    queryClient.invalidateQueries([`/api/farmer/herds?gameId=${gameId}`]);
+  };
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -149,10 +159,9 @@ export default function PlayPage() {
   // Stryker restore all
 
   // Stryker disable all
-  const mutationbuy = useBackendMutation(objectToAxiosParamsBuy, null, [
-    `/api/farmer/forcurrentuser?gameId=${gameId}`,
-    `/api/farmer/herds?gameId=${gameId}`,
-  ]);
+  const mutationbuy = useBackendMutation(objectToAxiosParamsBuy, {
+    onSuccess: invalidateFarmerData,
+  });
   // Stryker restore all
 
   const onBuy = (farmer, numCows) => {
@@ -161,8 +170,6 @@ export default function PlayPage() {
       quantity: Number(numCows),
     });
   };
-
-  const onSuccessSell = () => {};
 
   // Stryker disable all
 
@@ -180,14 +187,10 @@ export default function PlayPage() {
   // Stryker restore all
 
   // Stryker disable all
-  const mutationsell = useBackendMutation(
-    objectToAxiosParamsSell,
-    { onSuccess: onSuccessSell },
-    [
-      `/api/farmer/forcurrentuser?gameId=${gameId}`,
-      `/api/farmer/herds?gameId=${gameId}`,
-    ],
-  );
+  const mutationsell = useBackendMutation(objectToAxiosParamsSell, {
+    onSuccess: invalidateFarmerData,
+  });
+
   // Stryker restore all
 
   const onSell = (farmer, numCows, herdId) => {

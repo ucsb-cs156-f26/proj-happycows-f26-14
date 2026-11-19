@@ -11,7 +11,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.SelectOption;
-
+import com.microsoft.playwright.Response;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
 import edu.ucsb.cs156.happiercows.WebTestCase;
@@ -46,7 +46,12 @@ public class FarmerWebIT extends WebTestCase {
         // Click buy cow button
         page.getByTestId("buy-cow-button").click();
         page.getByTestId("buy-sell-cow-modal-input").fill("42");
-        page.getByTestId("buy-sell-cow-modal-submit").click();
+
+        Response buyResponse = page.waitForResponse(
+        response -> response.url().contains("/api/farmer/buy"),
+        () -> page.getByTestId("buy-sell-cow-modal-submit").click()
+        );
+
         // Check that total wealth is updated
         assertThat(page.getByText("5800")).isVisible();
         // Check that cow count is updated
