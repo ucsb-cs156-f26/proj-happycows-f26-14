@@ -156,6 +156,156 @@ public class FarmerControllerTests extends ControllerTestCase {
 
     @WithMockUser(roles = {"USER"})
     @Test
+    public void test_getFarmerHerds() throws Exception {
+
+        // arrange
+       Farmer farmer = getTestFarmer();
+
+       CowHerd herd1 = CowHerd.builder()
+            .id(10L)
+            .farmer(farmer)
+            .numOfCows(5)
+            .cowHealth(100.0)
+            .build();
+
+        CowHerd herd2 = CowHerd.builder()
+            .id(11L)
+            .farmer(farmer)
+            .numOfCows(3)
+            .cowHealth(75.0)
+            .build();
+
+        when(gameRepository.findById(eq(1L)))
+            .thenReturn(Optional.of(testGame));
+
+        when(farmerRepository.findByGameIdAndUserId(eq(1L), eq(1L)))
+            .thenReturn(Optional.of(farmer));
+
+        when(cowHerdRepository.findByFarmer_Id_UserIdAndFarmer_Id_GameId(1L, 1L))
+            .thenReturn(java.util.List.of(herd1, herd2));
+
+        // act
+        MvcResult response = mockMvc.perform(get("/api/farmer/herds?gameId=1"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        // assert
+        String expectedJson = """
+            [
+              {"id":10,"numOfCows":5,"cowHealth":100.0},
+              {"id":11,"numOfCows":3,"cowHealth":75.0}
+            ]
+            """;
+
+        assertEquals(
+            mapper.readTree(expectedJson),
+            mapper.readTree(response.getResponse().getContentAsString())
+        );
+
+        verify(cowHerdRepository, times(1))
+            .findByFarmer_Id_UserIdAndFarmer_Id_GameId(1L, 1L);
+        }
+
+      @WithMockUser(roles = {"USER"})
+      @Test
+      public void test_getFarmerHerds_empty() throws Exception {
+
+        // arrange
+        Farmer farmer = getTestFarmer();
+
+        when(gameRepository.findById(eq(1L)))
+            .thenReturn(Optional.of(testGame));
+
+        when(farmerRepository.findByGameIdAndUserId(eq(1L), eq(1L)))
+            .thenReturn(Optional.of(farmer));
+
+        when(cowHerdRepository.findByFarmer_Id_UserIdAndFarmer_Id_GameId(1L, 1L))
+            .thenReturn(java.util.List.of());
+
+        // act
+        MvcResult response = mockMvc.perform(get("/api/farmer/herds?gameId=1"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        // assert
+        assertEquals("[]", response.getResponse().getContentAsString());
+       }
+
+        @WithMockUser(roles = {"USER"})
+        @Test
+        public void test_getFarmerHerds_gameNotFound() throws Exception {
+
+        when(gameRepository.findById(eq(1L)))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/farmer/herds?gameId=1"))
+                .andExpect(status().isNotFound());
+
+        verify(gameRepository, times(1)).findById(eq(1L));
+        }
+
+        @WithMockUser(roles = {"USER"})
+        @Test
+        public void test_getFarmerHerds_farmerNotFound() throws Exception {
+
+        when(gameRepository.findById(eq(1L)))
+                .thenReturn(Optional.of(testGame));
+
+        when(farmerRepository.findByGameIdAndUserId(eq(1L), eq(1L)))
+                .thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/farmer/herds?gameId=1"))
+                .andExpect(status().isNotFound());
+
+        verify(farmerRepository, times(1))
+                .findByGameIdAndUserId(eq(1L), eq(1L));
+        }
+
+        @WithMockUser(roles = {"USER"})
+        @Test
+        public void test_getFarmerHerds_courseNotEnrolled() throws Exception {
+
+        // arrange
+        testGame.setCourseId(1L);
+
+        when(gameRepository.findById(eq(1L)))
+                .thenReturn(Optional.of(testGame));
+
+        when(courseAccessService.isEligibleForGame(
+                any(User.class), eq(testGame)))
+        .thenReturn(false);
+
+        // act
+        mockMvc.perform(get("/api/farmer/herds?gameId=1"))
+                .andExpect(status().isForbidden());
+
+        // assert
+        verify(courseAccessService, times(1))
+                .isEligibleForGame(any(User.class), eq(testGame));
+        }
+
+        @WithMockUser(roles = {"USER"})
+        @Test
+        public void test_getFarmerHerds_hiddenGame() throws Exception {
+
+        // arrange
+        testGame.setHidden(true);
+
+        when(gameRepository.findById(eq(1L)))
+                .thenReturn(Optional.of(testGame));
+
+        // act
+        mockMvc.perform(get("/api/farmer/herds?gameId=1"))
+                .andExpect(status().is4xxClientError());
+
+        // assert
+        verify(gameRepository, times(1)).findById(eq(1L));
+}
+
+
+
+    @WithMockUser(roles = {"USER"})
+    @Test
     public void test_BuyCow_game_exists() throws Exception {
 
         // arrange
@@ -239,7 +389,7 @@ public class FarmerControllerTests extends ControllerTestCase {
         verify(courseAccessService, times(1)).isEligibleForGame(eq(currentUser), eq(testGame));
         verify(farmerRepository, times(1)).findByGameIdAndUserId(eq(1L), eq(1L));
 
-        
+
         String expectedJson = mapper.writeValueAsString(expectedFarmer);
         String responseString = response.getResponse().getContentAsString();
         assertEquals(expectedJson, responseString);
@@ -584,8 +734,8 @@ public void test_SellCowsFromHerd_farmerNotFound() throws Exception {
 
         verify(cowHerdRepository, never()).save(any(CowHerd.class));
         verify(farmerRepository, never()).save(any(Farmer.class));
-   } 
-    
+   }
+
    @WithMockUser(roles = {"USER"})
    @Test
    public void test_SellCowsFromHerd_hiddenGame() throws Exception {
@@ -726,7 +876,7 @@ public void test_SellCowsFromHerd_farmerNotFound() throws Exception {
 
 
 
-     
+
 
 
     @WithMockUser(roles = {"USER"})

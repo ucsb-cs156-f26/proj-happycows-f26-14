@@ -44,6 +44,83 @@ describe("ManageCows tests", () => {
       </QueryClientProvider>,
     );
   });
+  test("shows no herds when herds prop is not provided", () => {
+    useParams.mockReturnValue({ userId: undefined });
+    currentUserModule.useCurrentUser.mockReturnValue({
+      data: { root: { user: { id: 1 } } },
+    });
+    currentUserModule.hasRole.mockReturnValue(true);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ManageCows
+          farmer={farmerFixtures.oneFarmer[0]}
+          setMessage={mockSetMessage}
+          openModal={mockOpenModal}
+        />
+      </QueryClientProvider>,
+    );
+
+    const section = screen.getByTestId("ManageCows-herds");
+    expect(section).toHaveTextContent("Your Herds");
+    expect(section).toHaveTextContent("No herds yet.");
+    expect(section.querySelectorAll("li")).toHaveLength(0);
+  });
+
+  test("shows no herds when herd list is empty", () => {
+    useParams.mockReturnValue({ userId: undefined });
+    currentUserModule.useCurrentUser.mockReturnValue({
+      data: { root: { user: { id: 1 } } },
+    });
+    currentUserModule.hasRole.mockReturnValue(true);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ManageCows
+          farmer={farmerFixtures.oneFarmer[0]}
+          herds={[]}
+          setMessage={mockSetMessage}
+          openModal={mockOpenModal}
+        />
+      </QueryClientProvider>,
+    );
+
+    const section = screen.getByTestId("ManageCows-herds");
+    expect(section).toHaveTextContent("No herds yet.");
+    expect(section.querySelectorAll("li")).toHaveLength(0);
+  });
+
+  test("displays each herd with its ID, cow count, and health", () => {
+    useParams.mockReturnValue({ userId: undefined });
+    currentUserModule.useCurrentUser.mockReturnValue({
+      data: { root: { user: { id: 1 } } },
+    });
+    currentUserModule.hasRole.mockReturnValue(true);
+
+    const herds = [
+      { id: 10, numOfCows: 5, cowHealth: 100 },
+      { id: 11, numOfCows: 3, cowHealth: 75.556 },
+    ];
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ManageCows
+          farmer={farmerFixtures.oneFarmer[0]}
+          herds={herds}
+          setMessage={mockSetMessage}
+          openModal={mockOpenModal}
+        />
+      </QueryClientProvider>,
+    );
+
+    const section = screen.getByTestId("ManageCows-herds");
+    const items = section.querySelectorAll("li");
+
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent("Herd 10: 5 cows — Health: 100%");
+    expect(items[1]).toHaveTextContent("Herd 11: 3 cows — Health: 75.56%");
+    expect(section).not.toHaveTextContent("No herds yet.");
+  });
 
   test("renders message when admin visit other pages", async () => {
     useParams.mockReturnValue({ userId: 1 }); // Replace with your desired mock values

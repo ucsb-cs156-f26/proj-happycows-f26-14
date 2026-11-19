@@ -11,6 +11,7 @@ import Profits from "main/components/Game/Profits";
 import { useBackend, useBackendMutation } from "main/utils/useBackend";
 import { hasRole } from "main/utils/currentUser";
 import { useCurrentUser } from "main/utils/currentUser";
+import { useQueryClient } from "react-query";
 import Background from "../../assets/PlayPageBackground.jpg";
 import ChatPanel from "main/components/Chat/ChatPanel";
 import ManageCowsModal from "main/components/Game/ManageCowsModal";
@@ -21,6 +22,15 @@ export default function PlayPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [message, setMessage] = useState();
   const [numCows, setNumCows] = useState(1);
+
+  const queryClient = useQueryClient();
+
+  const invalidateFarmerData = () => {
+    queryClient.invalidateQueries([
+      `/api/farmer/forcurrentuser?gameId=${gameId}`,
+    ]);
+    queryClient.invalidateQueries([`/api/farmer/herds?gameId=${gameId}`]);
+  };
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -42,6 +52,18 @@ export default function PlayPage() {
     },
   );
   // Stryker restore all
+
+  // Get the current farmer's herds
+  const { data: herds = [] } = useBackend(
+    [`/api/farmer/herds?gameId=${gameId}`],
+    {
+      method: "GET",
+      url: "/api/farmer/herds",
+      params: {
+        gameId: gameId,
+      },
+    },
+  );
 
   // Stryker disable all
   const { data: gamePlus } = useBackend([`/api/game/plus?id=${gameId}`], {
@@ -125,51 +147,54 @@ export default function PlayPage() {
   // Stryker restore all
 
   // Stryker disable all
-  const objectToAxiosParamsBuy = (newFarmer) => ({
+  const objectToAxiosParamsBuy = ({ farmer, quantity }) => ({
     url: "/api/farmer/buy",
     method: "PUT",
-    data: newFarmer,
+    data: farmer,
     params: {
       gameId: gameId,
-      numCows: numCows,
+      numCows: quantity,
     },
   });
   // Stryker restore all
 
   // Stryker disable all
-  const mutationbuy = useBackendMutation(objectToAxiosParamsBuy, null, [
-    `/api/farmer/forcurrentuser?gameId=${gameId}`,
-  ]);
+  const mutationbuy = useBackendMutation(objectToAxiosParamsBuy, {
+    onSuccess: invalidateFarmerData,
+  });
   // Stryker restore all
 
   const onBuy = (farmer, numCows) => {
-    mutationbuy.mutate(farmer, numCows);
+    mutationbuy.mutate({
+      farmer,
+      quantity: Number(numCows),
+    });
   };
 
-  const onSuccessSell = () => {};
-
   // Stryker disable all
-  const objectToAxiosParamsSell = (newFarmer) => ({
-    url: "/api/farmer/sell",
+
+  const objectToAxiosParamsSell = ({ farmer, herdId }) => ({
+    url: "/api/farmer/sell/herd",
     method: "PUT",
-    data: newFarmer,
+    data: farmer,
     params: {
       gameId: gameId,
+      herdId: herdId,
       numCows: numCows,
     },
   });
+
   // Stryker restore all
 
   // Stryker disable all
-  const mutationsell = useBackendMutation(
-    objectToAxiosParamsSell,
-    { onSuccess: onSuccessSell },
-    [`/api/farmer/forcurrentuser?gameId=${gameId}`],
-  );
+  const mutationsell = useBackendMutation(objectToAxiosParamsSell, {
+    onSuccess: invalidateFarmerData,
+  });
+
   // Stryker restore all
 
-  const onSell = (farmer, numCows) => {
-    mutationsell.mutate(farmer, numCows);
+  const onSell = (farmer, numCows, herdId) => {
+    mutationsell.mutate({ farmer, herdId });
   };
 
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -240,6 +265,7 @@ export default function PlayPage() {
               <ManageCows
                 farmer={farmer}
                 game={gamePlus.game}
+                herds={herds}
                 setMessage={setMessage}
                 openModal={openModal}
               />
@@ -248,6 +274,7 @@ export default function PlayPage() {
               <ManageCowsModal
                 number={numCows}
                 setNumber={setNumCows}
+                herds={herds}
                 farmer={farmer}
                 isOpen={isModalOpen}
                 message={message}

@@ -96,8 +96,13 @@ describe("PlayPage tests", () => {
       .reply(() => [200, currentAnnouncements]);
 
     axiosMock.onGet("/api/profits/all/gameid").reply(200, []);
+    axiosMock
+      .onGet("/api/farmer/herds", {
+        params: { gameId: 1 },
+      })
+      .reply(200, [{ id: 10, numOfCows: 5, cowHealth: 100 }]);
 
-    axiosMock.onPut("/api/farmer/sell").reply(200, farmerResponse.body);
+    axiosMock.onPut("/api/farmer/sell/herd").reply(200, farmerResponse.body);
     axiosMock.onPut("/api/farmer/buy").reply(200, farmerResponse.body);
 
     axiosMock.onPost("/api/farmeractivity/pageview").reply(200);
@@ -251,16 +256,29 @@ describe("PlayPage tests", () => {
 
     expect(await screen.findByTestId("sell-cow-button")).toBeInTheDocument();
 
-    const sellCowButton = screen.getByTestId("sell-cow-button");
-    fireEvent.click(sellCowButton);
+    fireEvent.click(screen.getByTestId("sell-cow-button"));
 
     const modalSell = await screen.findByTestId("buy-sell-cow-modal");
     expect(modalSell).toBeInTheDocument();
 
-    const submitModalButton = screen.getByTestId("buy-sell-cow-modal-submit");
-    fireEvent.click(submitModalButton);
+    // Wait for herd 10 to appear
+    await screen.findByRole("option", { name: /Herd 10/ });
+
+    // Select herd 10
+    fireEvent.change(screen.getByTestId("sell-herd-select"), {
+      target: { value: "10" },
+    });
+
+    fireEvent.click(screen.getByTestId("buy-sell-cow-modal-submit"));
 
     await waitFor(() => expect(axiosMock.history.put.length).toBe(1));
+
+    expect(axiosMock.history.put[0].url).toBe("/api/farmer/sell/herd");
+    expect(axiosMock.history.put[0].params).toEqual({
+      gameId: 1,
+      herdId: 10,
+      numCows: 1,
+    });
   });
 
   test("Make sure that both the Announcements and Welcome Farmer components show up", async () => {

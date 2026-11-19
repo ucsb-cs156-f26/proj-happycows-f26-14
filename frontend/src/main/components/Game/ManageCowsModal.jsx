@@ -12,7 +12,9 @@ const ManageCowsModal = ({
   farmer,
   onBuy,
   onSell,
+  herds,
 }) => {
+  const [selectedHerdId, setSelectedHerdId] = React.useState("");
   const handleInputChange = (e) => {
     if (e.target.value < 0) {
       toast.warn(`Warning: You cannot ${message} a negative number of cows!`);
@@ -23,11 +25,15 @@ const ManageCowsModal = ({
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Do not allow negative numbers.
     if (Number(number) < 0) {
       window.alert(
         `You cannot ${message} a negative number of cows! Please enter a non-negative number.`,
       );
+      return;
+    }
+
+    if (Number(number) === 0) {
+      window.alert(`You must ${message} at least one cow!`);
       return;
     }
 
@@ -42,7 +48,11 @@ const ManageCowsModal = ({
     if (message.includes("buy")) {
       onBuy(farmer, number);
     } else {
-      onSell(farmer, number);
+      if (!selectedHerdId) {
+        window.alert("Please select a herd first!");
+        return;
+      }
+      onSell(farmer, number, Number(selectedHerdId));
     }
 
     setNumber(1);
@@ -90,6 +100,28 @@ const ManageCowsModal = ({
               Please specify the number of cows you'd like to {message} below.
             </Form.Label>
           </Form.Group>
+
+          {message === "sell" && (
+            <Form.Group className="mb-3">
+              <Form.Label>Select a herd:</Form.Label>
+              <Form.Control
+                as="select"
+                data-testid="sell-herd-select"
+                value={selectedHerdId}
+                onChange={(e) => setSelectedHerdId(e.target.value)}
+              >
+                <option value="">Choose a herd</option>
+                {(herds?.filter((herd) => herd.numOfCows > 0) ?? []).map(
+                  (herd) => (
+                    <option key={herd.id} value={herd.id}>
+                      Herd {herd.id} - {herd.numOfCows} cows - {herd.cowHealth}%
+                      health
+                    </option>
+                  ),
+                )}
+              </Form.Control>
+            </Form.Group>
+          )}
           <Form.Group>
             <Form.Control
               data-testid={"buy-sell-cow-modal-input"}
