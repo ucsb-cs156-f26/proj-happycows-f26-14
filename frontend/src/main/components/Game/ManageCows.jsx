@@ -29,6 +29,12 @@ const ManageCows = ({ farmer, game, setMessage, openModal }) => {
           💵 Market Cow Price: ${game?.cowPrice}
         </Card.Title>
         <Card.Title className="text-center">
+           🛒 Purchase Fee: ${game?.purchaseFee ?? 0} per cow
+        </Card.Title>
+        <Card.Title className="text-center">
+        💰 Selling Fee: ${game?.sellingFee ?? 0} per cow
+        </Card.Title>
+        <Card.Title className="text-center">
           🐮 Number of Cows: {farmer.numOfCows}
         </Card.Title>
         <Card.Title className="text-center">
