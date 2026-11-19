@@ -9,6 +9,7 @@ import edu.ucsb.cs156.jobs.entities.Job;
 import edu.ucsb.cs156.happiercows.repositories.GameRepository;
 import edu.ucsb.cs156.happiercows.repositories.FarmerRepository;
 import edu.ucsb.cs156.happiercows.repositories.UserRepository;
+import edu.ucsb.cs156.happiercows.repositories.CowHerdRepository;
 import edu.ucsb.cs156.happiercows.services.GamePlusBuilderService;
 import edu.ucsb.cs156.jobs.services.JobContext;
 import edu.ucsb.cs156.happiercows.strategies.CowHealthUpdateStrategies;
@@ -42,7 +43,9 @@ public class UpdateCowHealthJobIndTests extends JobTestCase {
 
         @Mock
         UserRepository userRepository;
-        
+
+        @Mock
+        CowHerdRepository cowHerdRepository;
         @Mock
         GamePlusBuilderService gamePlusBuilderService;
 
@@ -92,7 +95,7 @@ public class UpdateCowHealthJobIndTests extends JobTestCase {
 
         private void runUpdateCowHealthJob() throws Exception {
                 var updateCowHealthJobInd = new UpdateCowHealthJobInd(gameRepository, farmerRepository,
-                                userRepository, gamePlusBuilderService, 1L);
+                userRepository, gamePlusBuilderService, cowHerdRepository, 1L);
                 updateCowHealthJobInd.accept(ctx);
         }
 
@@ -162,8 +165,10 @@ public class UpdateCowHealthJobIndTests extends JobTestCase {
 
     @Test
     void game_id_getter_returns_value_from_constructor() {
-        UpdateCowHealthJobInd jobInd = new UpdateCowHealthJobInd(gameRepository, farmerRepository,
-                userRepository, gamePlusBuilderService, 17L);
+        UpdateCowHealthJobInd jobInd = new UpdateCowHealthJobInd(
+            gameRepository, farmerRepository,
+            userRepository, gamePlusBuilderService,
+            cowHerdRepository, 17L);
 
         assertEquals(17L, jobInd.getGameID());
     }

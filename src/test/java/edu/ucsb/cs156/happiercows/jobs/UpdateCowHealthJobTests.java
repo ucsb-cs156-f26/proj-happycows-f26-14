@@ -9,6 +9,7 @@ import edu.ucsb.cs156.jobs.entities.Job;
 import edu.ucsb.cs156.happiercows.repositories.GameRepository;
 import edu.ucsb.cs156.happiercows.repositories.FarmerRepository;
 import edu.ucsb.cs156.happiercows.repositories.UserRepository;
+import edu.ucsb.cs156.happiercows.repositories.CowHerdRepository;
 import edu.ucsb.cs156.jobs.services.JobContext;
 import edu.ucsb.cs156.happiercows.services.GamePlusBuilderService;
 import edu.ucsb.cs156.happiercows.strategies.CowHealthUpdateStrategies;
@@ -24,6 +25,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import edu.ucsb.cs156.happiercows.entities.CowHerd;
+
+
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,10 +36,14 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration
 public class UpdateCowHealthJobTests extends JobTestCase {
+        @Mock
+        CowHerdRepository cowHerdRepository;
+
         @Mock
         GameRepository gameRepository;
 
@@ -86,8 +95,12 @@ public class UpdateCowHealthJobTests extends JobTestCase {
         private final JobContext ctx = new JobContext(null, job);
 
         private void runUpdateCowHealthJob() throws Exception {
-                var updateCowHealthJob = new UpdateCowHealthJob(gameRepository, farmerRepository,
-                                userRepository, gamePlusBuilderService);
+                 var updateCowHealthJob = new UpdateCowHealthJob(
+                        gameRepository,
+                        farmerRepository,
+                        userRepository,
+                        gamePlusBuilderService,
+                        cowHerdRepository);
                 updateCowHealthJob.accept(ctx);
         }
 
@@ -178,6 +191,46 @@ public class UpdateCowHealthJobTests extends JobTestCase {
                                 Cow health has been updated!""";
                 assertEquals(expected, job.getLog());
         }
+
+        @Test
+        void test_updates_health_for_each_herd() throws Exception {
+
+        // arrange
+        game.setAboveCapacityHealthUpdateStrategy(CowHealthUpdateStrategies.Constant);
+        farmer.setNumOfCows(2);
+
+        CowHerd herd1 = CowHerd.builder()
+                .farmer(farmer)
+                .numOfCows(1)
+                .cowHealth(80)
+                .build();
+
+        CowHerd herd2 = CowHerd.builder()
+                .farmer(farmer)
+                .numOfCows(1)
+                .cowHealth(60)
+                .build();
+
+        setupUpdateCowHealthTestOnGame(101, 1);
+
+        when(cowHerdRepository.findByFarmer_Id_UserIdAndFarmer_Id_GameId(
+                user.getId(), game.getId()))
+                .thenReturn(List.of(herd1, herd2));
+
+        // act
+        runUpdateCowHealthJob();
+
+        // assert
+        assertEquals(79.0, herd1.getCowHealth());
+        assertEquals(59.0, herd2.getCowHealth());
+
+        verify(cowHerdRepository).save(herd1);
+        verify(cowHerdRepository).save(herd2);
+        }
+
+
+
+
 
         @Test
         void test_uses_below_capacity_update_strategy_if_equal_to_carrying_capacity() throws Exception {
@@ -387,8 +440,9 @@ public class UpdateCowHealthJobTests extends JobTestCase {
                 when(gameRepository.getNumUsers(game.getId())).thenReturn(Optional.of(1));
 
                 var updateCowHealthJob = new UpdateCowHealthJob(gameRepository,
-                                farmerRepository,
-                                userRepository, gamePlusBuilderService);
+                farmerRepository,
+                userRepository, gamePlusBuilderService,
+                cowHerdRepository);
 
                 var thrown = Assertions.assertThrows(RuntimeException.class, () -> {
                         updateCowHealthJob.accept(ctx);
@@ -405,8 +459,9 @@ public class UpdateCowHealthJobTests extends JobTestCase {
                 when(gameRepository.getNumUsers(game.getId())).thenReturn(Optional.empty());
 
                 var updateCowHealthJob = new UpdateCowHealthJob(gameRepository,
-                                farmerRepository,
-                                userRepository, gamePlusBuilderService);
+                farmerRepository,
+                userRepository, gamePlusBuilderService,
+                cowHerdRepository);
 
                 var thrown = Assertions.assertThrows(RuntimeException.class, () -> {
                         updateCowHealthJob.accept(ctx);
@@ -418,8 +473,10 @@ public class UpdateCowHealthJobTests extends JobTestCase {
 
         @Test
         void game_plus_builder_service_getter_returns_value_from_constructor() {
-                var job = new UpdateCowHealthJob(gameRepository, farmerRepository,
-                                userRepository, gamePlusBuilderService);
+                var job = new UpdateCowHealthJob(gameRepository,
+                farmerRepository,
+                userRepository, gamePlusBuilderService,
+                cowHerdRepository);
 
                 assertSame(gamePlusBuilderService, job.getGamePlusBuilderService());
         }
