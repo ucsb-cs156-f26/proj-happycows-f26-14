@@ -9,6 +9,7 @@ happycows,edu.ucsb.cs156.happiercows.services,GameStatsService,0,85,0,0,0,20,0,4
 happycows,edu.ucsb.cs156.happiercows.services,ParticipationGradeService,0,340,0,32,0,70,0,27,0,11
 happycows,edu.ucsb.cs156.happiercows.services,CourseAccessService,0,124,0,26,0,29,0,17,0,4
 happycows,edu.ucsb.cs156.happiercows.services,JobUserProviderImpl,0,26,0,4,0,5,0,5,0,3
+happycows,edu.ucsb.cs156.happiercows.services,ChatFilterService,0,59,0,2,0,17,0,5,0,4
 happycows,edu.ucsb.cs156.happiercows.services,GrantedAuthoritiesService,0,21,0,0,0,7,0,3,0,3
 happycows,edu.ucsb.cs156.happiercows.services,AverageCowHealthService,0,102,0,4,0,15,0,7,0,5
 happycows,edu.ucsb.cs156.happiercows.advice,HappierCowsControllerAdvice,0,11,0,0,0,4,0,3,0,3
@@ -54,6 +55,7 @@ happycows,edu.ucsb.cs156.happiercows.jobs,InstructorReportJob,0,76,0,4,0,12,0,3,
 happycows,edu.ucsb.cs156.happiercows.jobs,UpdateCowHealthJobInd,0,54,0,4,0,12,0,3,0,1
 happycows,edu.ucsb.cs156.happiercows.errors,NotEnrolledInCourseAssociatedWithGameException,0,4,0,0,0,2,0,1,0,1
 happycows,edu.ucsb.cs156.happiercows.errors,NotEnoughMoneyException,0,4,0,0,0,2,0,1,0,1
+happycows,edu.ucsb.cs156.happiercows.errors,InvalidCooldownDurationException,0,4,0,0,0,2,0,1,0,1
 happycows,edu.ucsb.cs156.happiercows.errors,NoCowsException,0,4,0,0,0,2,0,1,0,1
 happycows,edu.ucsb.cs156.happiercows.errors,CourseAccessDeniedException,0,11,0,0,0,2,0,1,0,1
 happycows,edu.ucsb.cs156.happiercows.errors,EntityNotFoundException,0,63,0,0,0,11,0,3,0,3
@@ -64,7 +66,7 @@ happycows,edu.ucsb.cs156.happiercows.entities,Farmer,0,15,0,0,0,5,0,4,0,4
 happycows,edu.ucsb.cs156.happiercows.entities,User,0,16,0,0,0,1,0,1,0,1
 happycows,edu.ucsb.cs156.happiercows.entities,Game,0,43,0,6,0,6,0,6,0,3
 happycows,edu.ucsb.cs156.happiercows.controllers,CourseController,0,115,0,0,0,24,0,11,0,11
-happycows,edu.ucsb.cs156.happiercows.controllers,ChatMessageController,0,282,0,22,0,59,0,22,0,11
+happycows,edu.ucsb.cs156.happiercows.controllers,ChatMessageController,0,320,0,26,0,68,0,24,0,11
 happycows,edu.ucsb.cs156.happiercows.controllers,FarmerController,0,395,0,14,0,78,0,22,0,15
 happycows,edu.ucsb.cs156.happiercows.controllers,GameController,0,873,0,48,0,202,0,51,0,27
 happycows,edu.ucsb.cs156.happiercows.controllers,JobsController,0,123,0,8,0,26,0,14,0,10
@@ -77,7 +79,7 @@ happycows,edu.ucsb.cs156.happiercows.controllers,SystemInfoController,0,7,0,0,0,
 happycows,edu.ucsb.cs156.happiercows.controllers,StudentController,0,290,0,14,0,67,0,20,0,13
 happycows,edu.ucsb.cs156.happiercows.controllers,AnnouncementsController,0,412,0,46,0,97,0,36,0,13
 happycows,edu.ucsb.cs156.happiercows.controllers,ParticipationGradeController,0,92,0,0,0,22,0,4,0,4
-happycows,edu.ucsb.cs156.happiercows.controllers,UsersController,0,90,0,0,0,12,0,6,0,6
+happycows,edu.ucsb.cs156.happiercows.controllers,UsersController,0,183,0,2,0,26,0,11,0,10
 happycows,edu.ucsb.cs156.happiercows.controllers,CSRFController,0,5,0,0,0,2,0,2,0,2
 happycows,edu.ucsb.cs156.happiercows.controllers,GameFeaturesController,0,16,0,0,0,6,0,3,0,3
 happycows,edu.ucsb.cs156.happiercows.controllers,FarmerActivityController,0,92,0,0,0,15,0,8,0,8
