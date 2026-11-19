@@ -137,15 +137,15 @@ export default function PlayPage() {
   // Stryker restore all
 
   // Stryker disable all
-  const objectToAxiosParamsBuy = (newFarmer) => ({
-    url: "/api/farmer/buy",
-    method: "PUT",
-    data: newFarmer,
-    params: {
-      gameId: gameId,
-      numCows: numCows,
-    },
-  });
+  const objectToAxiosParamsBuy = ({ farmer, quantity }) => ({
+  url: "/api/farmer/buy",
+  method: "PUT",
+  data: farmer,
+  params: {
+    gameId: gameId,
+    numCows: quantity,
+  },
+});
   // Stryker restore all
 
   // Stryker disable all
@@ -155,9 +155,14 @@ export default function PlayPage() {
   ]);
   // Stryker restore all
 
+
   const onBuy = (farmer, numCows) => {
-    mutationbuy.mutate(farmer, numCows);
+    mutationbuy.mutate({
+      farmer,
+      quantity: Number(numCows),
+    });
   };
+
 
   const onSuccessSell = () => {};
 
