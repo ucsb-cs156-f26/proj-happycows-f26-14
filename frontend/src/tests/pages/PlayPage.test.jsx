@@ -97,10 +97,10 @@ describe("PlayPage tests", () => {
 
     axiosMock.onGet("/api/profits/all/gameid").reply(200, []);
     axiosMock
-  .onGet("/api/farmer/herds", {
-    params: { gameId: 1 },
-  })
-  .reply(200, [{ id: 10, numOfCows: 5, cowHealth: 100 }]);
+      .onGet("/api/farmer/herds", {
+        params: { gameId: 1 },
+      })
+      .reply(200, [{ id: 10, numOfCows: 5, cowHealth: 100 }]);
 
     axiosMock.onPut("/api/farmer/sell/herd").reply(200, farmerResponse.body);
     axiosMock.onPut("/api/farmer/buy").reply(200, farmerResponse.body);
@@ -251,7 +251,6 @@ describe("PlayPage tests", () => {
     await waitFor(() => expect(axiosMock.history.put.length).toBe(1));
   });
 
-
   test("click sell button", async () => {
     renderPage();
 
@@ -281,7 +280,6 @@ describe("PlayPage tests", () => {
       numCows: 1,
     });
   });
-
 
   test("Make sure that both the Announcements and Welcome Farmer components show up", async () => {
     renderPage();

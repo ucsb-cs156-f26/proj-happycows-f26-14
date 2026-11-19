@@ -34,17 +34,17 @@ const ManageCows = ({ farmer, game, herds = [], setMessage, openModal }) => {
         <div data-testid="ManageCows-herds">
           <h6>Your Herds</h6>
           {herds.length === 0 ? (
-          <p>No herds yet.</p>
+            <p>No herds yet.</p>
           ) : (
-        <ul>
-          {herds.map((herd) => (
-            <li key={herd.id}>
-            Herd {herd.id}: {herd.numOfCows} cows — Health:{" "}
-            {Math.round(herd.cowHealth * 100) / 100}%
-          </li>
-          ))}
-        </ul>
-        )}
+            <ul>
+              {herds.map((herd) => (
+                <li key={herd.id}>
+                  Herd {herd.id}: {herd.numOfCows} cows — Health:{" "}
+                  {Math.round(herd.cowHealth * 100) / 100}%
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <Card.Title className="text-center">
           🥛 Current Milk Price: ${game?.milkPrice}

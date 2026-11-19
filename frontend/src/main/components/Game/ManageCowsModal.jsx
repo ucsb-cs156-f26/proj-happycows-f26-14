@@ -25,7 +25,6 @@ const ManageCowsModal = ({
   const handleSubmit = (e) => {
     e.preventDefault();
 
-
     if (Number(number) < 0) {
       window.alert(
         `You cannot ${message} a negative number of cows! Please enter a non-negative number.`,
@@ -37,8 +36,6 @@ const ManageCowsModal = ({
       window.alert(`You must ${message} at least one cow!`);
       return;
     }
-
-
 
     // Cows must be purchased or sold in whole numbers.
     if (!Number.isInteger(Number(number))) {
