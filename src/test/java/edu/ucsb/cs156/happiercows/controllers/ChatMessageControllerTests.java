@@ -7,9 +7,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 
 import edu.ucsb.cs156.happiercows.repositories.UserRepository;
 import edu.ucsb.cs156.happiercows.testconfig.TestConfig;
+import edu.ucsb.cs156.happiercows.entities.User;
+import edu.ucsb.cs156.happiercows.models.CurrentUser;
+import edu.ucsb.cs156.happiercows.services.ChatFilterService;
+import edu.ucsb.cs156.happiercows.services.CurrentUserService;
+import org.mockito.ArgumentCaptor;
+import java.time.Instant;
+import org.junit.jupiter.api.BeforeEach;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -56,8 +64,39 @@ public class ChatMessageControllerTests extends ControllerTestCase {
     @MockBean
     UserRepository userRepository;
 
+    @MockBean
+    CurrentUserService mockCurrentUserService;
+
+    @MockBean
+    ChatFilterService chatFilterService;
+
     @Autowired
     ObjectMapper mapper;
+
+    @BeforeEach
+    public void setupCurrentUser() {
+        User user = User.builder()
+                .id(1L)
+                .build();
+
+        when(mockCurrentUserService.getCurrentUser())
+                .thenReturn(CurrentUser.builder().user(user).build());
+
+        // By default nothing is filtered; censoring has its own tests below
+        // and in ChatFilterServiceTests.
+        when(chatFilterService.censor(anyString()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    private void setCurrentUserCooldown(Instant cooldownUntil) {
+        User user = User.builder()
+                .id(1L)
+                .cooldownUntil(cooldownUntil)
+                .build();
+
+        when(mockCurrentUserService.getCurrentUser())
+                .thenReturn(CurrentUser.builder().user(user).build());
+    }
 
 
     //* */ get tests
@@ -153,6 +192,34 @@ public class ChatMessageControllerTests extends ControllerTestCase {
 
     }
     
+    @WithMockUser(roles = {"USER"})
+    @Test
+    public void userOnCooldownCanStillGetChatMessages() throws Exception {
+
+        Long gameId = 1L;
+        Long userId = 1L;
+        int page = 0;
+        int size = 10;
+
+        setCurrentUserCooldown(Instant.now().plusSeconds(600));
+
+        Page<ChatMessage> pageOfChatMessages = new PageImpl<>(Arrays.asList());
+
+        when(chatMessageRepository.findByGameId(gameId, PageRequest.of(page, size, Sort.by("timestamp").descending())))
+                .thenReturn(pageOfChatMessages);
+
+        Farmer farmer = Farmer.builder()
+                .game(Game.builder().showChat(true).build())
+                .build();
+        when(farmerRepository.findByGameIdAndUserId(gameId, userId)).thenReturn(Optional.of(farmer));
+
+        mockMvc.perform(get("/api/chat/get?gameId={gameId}&page={page}&size={size}", gameId, page, size))
+                .andExpect(status().isOk());
+
+        verify(chatMessageRepository, atLeastOnce())
+                .findByGameId(gameId, PageRequest.of(page, size, Sort.by("timestamp").descending()));
+    }
+
     //* */ admin/get tests
     @WithMockUser(roles = {"ADMIN"})
     @Test
@@ -288,6 +355,87 @@ public class ChatMessageControllerTests extends ControllerTestCase {
         String expectedResponseString = mapper.writeValueAsString(chatMessage);
         log.info("Got back from API: {}",responseString);
         assertEquals(expectedResponseString, responseString);
+    }
+
+    @WithMockUser(roles = {"USER"})
+    @Test
+    public void postedChatMessageIsCensoredBeforeSaving() throws Exception {
+
+        // arrange
+        Long gameId = 1L;
+        Long userId = 1L;
+        String content = "You darn cow!";
+
+        when(chatFilterService.censor(content)).thenReturn("You **** cow!");
+
+        Farmer farmer = Farmer.builder()
+                .game(Game.builder().showChat(true).build())
+                .build();
+        when(farmerRepository.findByGameIdAndUserId(gameId, userId)).thenReturn(Optional.of(farmer));
+
+        //act
+        mockMvc.perform(post("/api/chat/post?gameId={gameId}&content={content}", gameId, content).with(csrf()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("You **** cow!"));
+
+        // assert
+        ArgumentCaptor<ChatMessage> captor = ArgumentCaptor.forClass(ChatMessage.class);
+        verify(chatMessageRepository, times(1)).save(captor.capture());
+        assertEquals("You **** cow!", captor.getValue().getMessage());
+    }
+
+    @WithMockUser(roles = {"USER"})
+    @Test
+    public void userOnActiveCooldownCannotPostChatMessages() throws Exception {
+
+        Long gameId = 1L;
+        Long userId = 1L;
+        String content = "Hello world!";
+
+        setCurrentUserCooldown(Instant.now().plusSeconds(600));
+
+        Farmer farmer = Farmer.builder()
+                .game(Game.builder().showChat(true).build())
+                .build();
+        when(farmerRepository.findByGameIdAndUserId(gameId, userId)).thenReturn(Optional.of(farmer));
+
+        mockMvc.perform(post("/api/chat/post?gameId={gameId}&content={content}", gameId, content)
+                .with(csrf()))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.type").value("ChatCooldown"))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("You are on chat cooldown")));
+
+        verify(chatMessageRepository, times(0)).save(any(ChatMessage.class));
+    }
+
+    @WithMockUser(roles = {"USER"})
+    @Test
+    public void userWithExpiredCooldownCanPostChatMessages() throws Exception {
+
+        Long gameId = 1L;
+        Long userId = 1L;
+        String content = "Hello world!";
+
+        setCurrentUserCooldown(Instant.now().minusSeconds(60));
+
+        Farmer farmer = Farmer.builder()
+                .game(Game.builder().showChat(true).build())
+                .build();
+        when(farmerRepository.findByGameIdAndUserId(gameId, userId)).thenReturn(Optional.of(farmer));
+
+        ChatMessage savedMessage = ChatMessage.builder()
+                .id(1L)
+                .gameId(gameId)
+                .userId(userId)
+                .message(content)
+                .build();
+        when(chatMessageRepository.save(any(ChatMessage.class))).thenReturn(savedMessage);
+
+        mockMvc.perform(post("/api/chat/post?gameId={gameId}&content={content}", gameId, content)
+                .with(csrf()))
+                .andExpect(status().isOk());
+
+        verify(chatMessageRepository, atLeastOnce()).save(any(ChatMessage.class));
     }
 
     @WithMockUser(roles = {"USER"})
