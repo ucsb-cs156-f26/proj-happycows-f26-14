@@ -28,6 +28,7 @@ import edu.ucsb.cs156.happiercows.services.FarmerActivityService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -95,6 +96,39 @@ public class FarmerController extends ApiController {
             () -> new EntityNotFoundException(Farmer.class, "gameId", gameId, "userId", userId));
     return farmer;
   }
+
+  @Operation(summary = "Get all herds for the current farmer")
+  @PreAuthorize("hasRole('ROLE_USER')")
+  @GetMapping("/herds")
+  public List<Map<String, Object>> getFarmerHerds(@RequestParam Long gameId) {
+    User user = getCurrentUser().getUser();
+    Long userId = user.getId();
+
+    Game game = gameRepository.findById(gameId)
+        .orElseThrow(() -> new EntityNotFoundException("Game", gameId));
+
+    ensureUserCanAccessCourseLinkedGame(user, game);
+
+    if (game.isHidden()) {
+      throw new GameHiddenException(gameId);
+    }
+
+    farmerRepository.findByGameIdAndUserId(gameId, userId)
+        .orElseThrow(() -> new EntityNotFoundException(
+            Farmer.class, "gameId", gameId, "userId", userId));
+
+    List<Map<String, Object>> herds = new ArrayList<>();
+
+    cowHerdRepository.findByFarmer_Id_UserIdAndFarmer_Id_GameId(userId, gameId)
+        .forEach(herd -> herds.add(Map.of(
+            "id", herd.getId(),
+            "numOfCows", herd.getNumOfCows(),
+            "cowHealth", herd.getCowHealth()
+        )));
+
+    return herds;
+  }
+
 
   @Operation(summary = "Buy a cow, totalWealth updated")
   @PreAuthorize("hasRole('ROLE_USER')")

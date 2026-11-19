@@ -4,7 +4,7 @@ import { useCurrentUser, hasRole } from "main/utils/currentUser";
 import { useParams } from "react-router";
 
 // add parameters
-const ManageCows = ({ farmer, game, setMessage, openModal }) => {
+const ManageCows = ({ farmer, game, herds = [], setMessage, openModal }) => {
   // update cowPrice from fixture
   const { data: currentUser } = useCurrentUser();
   let { userId } = useParams();
@@ -31,6 +31,21 @@ const ManageCows = ({ farmer, game, setMessage, openModal }) => {
         <Card.Title className="text-center">
           🐮 Number of Cows: {farmer.numOfCows}
         </Card.Title>
+        <div data-testid="ManageCows-herds">
+          <h6>Your Herds</h6>
+          {herds.length === 0 ? (
+          <p>No herds yet.</p>
+          ) : (
+        <ul>
+          {herds.map((herd) => (
+            <li key={herd.id}>
+            Herd {herd.id}: {herd.numOfCows} cows — Health:{" "}
+            {Math.round(herd.cowHealth * 100) / 100}%
+          </li>
+          ))}
+        </ul>
+        )}
+        </div>
         <Card.Title className="text-center">
           🥛 Current Milk Price: ${game?.milkPrice}
         </Card.Title>

@@ -43,6 +43,18 @@ export default function PlayPage() {
   );
   // Stryker restore all
 
+  // Get the current farmer's herds
+  const { data: herds = [] } = useBackend(
+    [`/api/farmer/herds?gameId=${gameId}`],
+    {
+      method: "GET",
+      url: "/api/farmer/herds",
+      params: {
+        gameId: gameId,
+      },
+    },
+  );
+
   // Stryker disable all
   const { data: gamePlus } = useBackend([`/api/game/plus?id=${gameId}`], {
     method: "GET",
@@ -139,6 +151,7 @@ export default function PlayPage() {
   // Stryker disable all
   const mutationbuy = useBackendMutation(objectToAxiosParamsBuy, null, [
     `/api/farmer/forcurrentuser?gameId=${gameId}`,
+    `/api/farmer/herds?gameId=${gameId}`,
   ]);
   // Stryker restore all
 
@@ -149,27 +162,33 @@ export default function PlayPage() {
   const onSuccessSell = () => {};
 
   // Stryker disable all
-  const objectToAxiosParamsSell = (newFarmer) => ({
-    url: "/api/farmer/sell",
+
+  const objectToAxiosParamsSell = ({ farmer, herdId }) => ({
+    url: "/api/farmer/sell/herd",
     method: "PUT",
-    data: newFarmer,
+    data: farmer,
     params: {
       gameId: gameId,
+      herdId: herdId,
       numCows: numCows,
     },
   });
+
   // Stryker restore all
 
   // Stryker disable all
   const mutationsell = useBackendMutation(
     objectToAxiosParamsSell,
     { onSuccess: onSuccessSell },
-    [`/api/farmer/forcurrentuser?gameId=${gameId}`],
+    [
+      `/api/farmer/forcurrentuser?gameId=${gameId}`,
+      `/api/farmer/herds?gameId=${gameId}`,
+    ],
   );
   // Stryker restore all
 
-  const onSell = (farmer, numCows) => {
-    mutationsell.mutate(farmer, numCows);
+  const onSell = (farmer, numCows, herdId) => {
+    mutationsell.mutate({ farmer, herdId });
   };
 
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -240,6 +259,7 @@ export default function PlayPage() {
               <ManageCows
                 farmer={farmer}
                 game={gamePlus.game}
+                herds={herds}
                 setMessage={setMessage}
                 openModal={openModal}
               />
@@ -248,6 +268,7 @@ export default function PlayPage() {
               <ManageCowsModal
                 number={numCows}
                 setNumber={setNumCows}
+                herds={herds}
                 farmer={farmer}
                 isOpen={isModalOpen}
                 message={message}

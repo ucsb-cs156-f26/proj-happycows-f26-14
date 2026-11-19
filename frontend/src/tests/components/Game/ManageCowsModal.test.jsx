@@ -146,21 +146,46 @@ describe("ManageCowsModal", () => {
         number={number2}
         onSell={mockOnSell}
         setNumber={mockSetNumber}
+        herds={[{ id: 10, numOfCows: 5, cowHealth: 100 }]}
       />,
     );
-
+    fireEvent.change(screen.getByTestId("sell-herd-select"), {
+      target: { value: "10" },
+    });
     fireEvent.click(screen.getByTestId("buy-sell-cow-modal-submit"));
 
     await waitFor(() =>
       expect(mockOnSell).toHaveBeenCalledWith(
         farmerFixtures.oneFarmer[0],
         number2,
+        10,
       ),
     );
   });
 
-  test("calls onSell with correct arguments when sell button is clicked (0 argument)", async () => {
+  test("does not sell without selecting a herd", () => {
+    render(
+      <ManageCowsModal
+        isOpen={true}
+        onClose={mockOnClose}
+        message="sell"
+        farmer={farmerFixtures.oneFarmer[0]}
+        number={3}
+        onSell={mockOnSell}
+        setNumber={mockSetNumber}
+        herds={[{ id: 10, numOfCows: 5, cowHealth: 100 }]}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("buy-sell-cow-modal-submit"));
+
+    expect(window.alert).toHaveBeenCalledWith("Please select a herd first!");
+    expect(mockOnSell).not.toHaveBeenCalled();
+  });
+
+  test("does not sell zero cows", async () => {
     const number2 = 0;
+
     render(
       <ManageCowsModal
         isOpen={true}
@@ -170,29 +195,27 @@ describe("ManageCowsModal", () => {
         number={number2}
         onSell={mockOnSell}
         setNumber={mockSetNumber}
+        herds={[{ id: 10, numOfCows: 5, cowHealth: 100 }]}
       />,
     );
 
+    fireEvent.change(screen.getByTestId("sell-herd-select"), {
+      target: { value: "10" },
+    });
+
     fireEvent.click(screen.getByTestId("buy-sell-cow-modal-submit"));
 
-    await waitFor(() =>
-      expect(mockOnSell).toHaveBeenCalledWith(
-        farmerFixtures.oneFarmer[0],
-        number2,
-      ),
-    );
+    expect(mockOnSell).not.toHaveBeenCalled();
   });
 
-  test("windows toolkit warning for buying negative cows", async () => {
-    const number2 = -3;
-
+  test("windows toolkit warning for buying negative cows", () => {
     render(
       <ManageCowsModal
         isOpen={true}
         onClose={mockOnClose}
         message="buy"
         farmer={farmerFixtures.oneFarmer[0]}
-        number={number2}
+        number={-3}
         onBuy={mockOnBuy}
         setNumber={mockSetNumber}
       />,
@@ -203,6 +226,7 @@ describe("ManageCowsModal", () => {
     expect(window.alert).toHaveBeenCalledWith(
       "You cannot buy a negative number of cows! Please enter a non-negative number.",
     );
+    expect(mockOnBuy).not.toHaveBeenCalled();
   });
 
   test("windows toolkit warning for selling negative cows", async () => {
