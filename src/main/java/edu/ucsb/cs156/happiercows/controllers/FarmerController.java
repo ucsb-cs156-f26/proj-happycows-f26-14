@@ -36,6 +36,12 @@ import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PutMapping;
 
+
+import edu.ucsb.cs156.happiercows.entities.CowHerd;
+import edu.ucsb.cs156.happiercows.repositories.CowHerdRepository;
+
+
+
 @Tag(name = "User Game")
 @RequestMapping("/api/farmer")
 @RestController
@@ -43,6 +49,10 @@ public class FarmerController extends ApiController {
 
   @Autowired
   private FarmerRepository farmerRepository;
+
+
+  @Autowired
+  private CowHerdRepository cowHerdRepository;
 
   @Autowired
   private GameRepository gameRepository;
@@ -118,6 +128,13 @@ public class FarmerController extends ApiController {
           throw new NotEnoughMoneyException("You need more money!");
         }
         farmerRepository.save(farmer);
+        CowHerd herd = CowHerd.builder()
+            .farmer(farmer)
+            .numOfCows(numCows)
+            .cowHealth(100)
+            .build();
+
+        cowHerdRepository.save(herd);
 
         farmerActivityService.recordActivityIfStudentMatch(
             u, game, farmer, FarmerActivity.ACTIVITY_TYPE_BUY, numCows);
@@ -158,6 +175,7 @@ public class FarmerController extends ApiController {
         else{
           throw new NoCowsException("You do not have enough cows to sell!");
         }
+
         farmerRepository.save(farmer);
 
         farmerActivityService.recordActivityIfStudentMatch(
