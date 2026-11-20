@@ -1,3 +1,4 @@
+
 package edu.ucsb.cs156.happiercows.jobs;
 
 import edu.ucsb.cs156.happiercows.entities.Game;
@@ -8,26 +9,29 @@ import edu.ucsb.cs156.happiercows.entities.CowHerd;
 import edu.ucsb.cs156.happiercows.repositories.GameRepository;
 import edu.ucsb.cs156.happiercows.repositories.FarmerRepository;
 import edu.ucsb.cs156.happiercows.repositories.UserRepository;
+import edu.ucsb.cs156.happiercows.repositories.CowHerdRepository;
 import edu.ucsb.cs156.jobs.services.JobContext;
 import edu.ucsb.cs156.jobs.services.JobContextConsumer;
 import edu.ucsb.cs156.happiercows.services.GamePlusBuilderService;
 import edu.ucsb.cs156.happiercows.strategies.CowHealthUpdateStrategy;
-import edu.ucsb.cs156.happiercows.repositories.CowHerdRepository;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
 
 @AllArgsConstructor
 public class UpdateCowHealthJob implements JobContextConsumer {
 
     @Getter
     private GameRepository gameRepository;
+
     @Getter
     private FarmerRepository farmerRepository;
+
     @Getter
     private UserRepository userRepository;
+
     @Getter
     private GamePlusBuilderService gamePlusBuilderService;
+
     @Getter
     private CowHerdRepository cowHerdRepository;
 
@@ -35,22 +39,26 @@ public class UpdateCowHealthJob implements JobContextConsumer {
     public void accept(JobContext ctx) throws Exception {
         ctx.log("Updating cow health...");
 
-
         Iterable<Game> allGame = gameRepository.findAll();
-        Iterable<GamePlus> allGamePlus = gamePlusBuilderService.convertToGamePlus(allGame);
+        Iterable<GamePlus> allGamePlus =
+            gamePlusBuilderService.convertToGamePlus(allGame);
 
         for (GamePlus gamePlus : allGamePlus) {
-
-
             Game game = gamePlus.getGame();
 
             if (!GameGate.shouldProcess(game, gameRepository, ctx)) {
                 continue;
             }
 
-           runUpdateJobInGame(game, gamePlus, gamePlusBuilderService,
-            gameRepository, farmerRepository, cowHerdRepository, ctx);
-
+            runUpdateJobInGame(
+                game,
+                gamePlus,
+                gamePlusBuilderService,
+                gameRepository,
+                farmerRepository,
+                cowHerdRepository,
+                ctx
+            );
         }
 
         ctx.log("Cow health has been updated!");
@@ -63,17 +71,25 @@ public class UpdateCowHealthJob implements JobContextConsumer {
             Farmer farmer,
             int totalCows
     ) {
-        var health = strategy.calculateNewCowHealth(gamePlus, farmer, totalCows);
+        var health = strategy.calculateNewCowHealth(
+            gamePlus, farmer, totalCows
+        );
+
         return Math.max(0, Math.min(health, 100));
     }
 
     public static void calculateCowDeaths(Farmer farmer, JobContext ctx) {
         if (farmer.getCowHealth() == 0.0) {
-            farmer.setCowDeaths(farmer.getCowDeaths() + farmer.getNumOfCows());
+            farmer.setCowDeaths(
+                farmer.getCowDeaths() + farmer.getNumOfCows()
+            );
+
             farmer.setNumOfCows(0);
             farmer.setCowHealth(100.0);
 
-            ctx.log(" " + farmer.getCowDeaths() + " cows for this user died." );
+            ctx.log(
+                " " + farmer.getCowDeaths() + " cows for this user died."
+            );
         }
     }
 
@@ -151,7 +167,6 @@ public class UpdateCowHealthJob implements JobContextConsumer {
 
         farmerRepository.save(farmer);
         }
-
     }
 
 }
