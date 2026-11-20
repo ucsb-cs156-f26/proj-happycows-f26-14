@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UpdateCowHealthJob.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">happycows</a> &gt; <a href="index.source.html" class="el_package">edu.ucsb.cs156.happiercows.jobs</a> &gt; <span class="el_source">UpdateCowHealthJob.java</span></div><h1>UpdateCowHealthJob.java</h1><pre class="source lang-java linenums">package edu.ucsb.cs156.happiercows.jobs;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UpdateCowHealthJob.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">happycows</a> &gt; <a href="index.source.html" class="el_package">edu.ucsb.cs156.happiercows.jobs</a> &gt; <span class="el_source">UpdateCowHealthJob.java</span></div><h1>UpdateCowHealthJob.java</h1><pre class="source lang-java linenums">
+package edu.ucsb.cs156.happiercows.jobs;
 
 import edu.ucsb.cs156.happiercows.entities.Game;
 import edu.ucsb.cs156.happiercows.entities.GamePlus;
@@ -8,53 +9,60 @@ import edu.ucsb.cs156.happiercows.entities.CowHerd;
 import edu.ucsb.cs156.happiercows.repositories.GameRepository;
 import edu.ucsb.cs156.happiercows.repositories.FarmerRepository;
 import edu.ucsb.cs156.happiercows.repositories.UserRepository;
+import edu.ucsb.cs156.happiercows.repositories.CowHerdRepository;
 import edu.ucsb.cs156.jobs.services.JobContext;
 import edu.ucsb.cs156.jobs.services.JobContextConsumer;
 import edu.ucsb.cs156.happiercows.services.GamePlusBuilderService;
 import edu.ucsb.cs156.happiercows.strategies.CowHealthUpdateStrategy;
-import edu.ucsb.cs156.happiercows.repositories.CowHerdRepository;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
 
 @AllArgsConstructor
 public class UpdateCowHealthJob implements JobContextConsumer {
 
     @Getter
     private GameRepository gameRepository;
+
     @Getter
     private FarmerRepository farmerRepository;
+
     @Getter
     private UserRepository userRepository;
+
     @Getter
     private GamePlusBuilderService gamePlusBuilderService;
+
     @Getter
     private CowHerdRepository cowHerdRepository;
 
     @Override
     public void accept(JobContext ctx) throws Exception {
-<span class="fc" id="L36">        ctx.log(&quot;Updating cow health...&quot;);</span>
+<span class="fc" id="L40">        ctx.log(&quot;Updating cow health...&quot;);</span>
 
+<span class="fc" id="L42">        Iterable&lt;Game&gt; allGame = gameRepository.findAll();</span>
+<span class="fc" id="L43">        Iterable&lt;GamePlus&gt; allGamePlus =</span>
+<span class="fc" id="L44">            gamePlusBuilderService.convertToGamePlus(allGame);</span>
 
-<span class="fc" id="L39">        Iterable&lt;Game&gt; allGame = gameRepository.findAll();</span>
-<span class="fc" id="L40">        Iterable&lt;GamePlus&gt; allGamePlus = gamePlusBuilderService.convertToGamePlus(allGame);</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        for (GamePlus gamePlus : allGamePlus) {</span>
+<span class="fc" id="L47">            Game game = gamePlus.getGame();</span>
 
-<span class="fc bfc" id="L42" title="All 2 branches covered.">        for (GamePlus gamePlus : allGamePlus) {</span>
-
-
-<span class="fc" id="L45">            Game game = gamePlus.getGame();</span>
-
-<span class="fc bfc" id="L47" title="All 2 branches covered.">            if (!GameGate.shouldProcess(game, gameRepository, ctx)) {</span>
-<span class="fc" id="L48">                continue;</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">            if (!GameGate.shouldProcess(game, gameRepository, ctx)) {</span>
+<span class="fc" id="L50">                continue;</span>
             }
 
-<span class="fc" id="L51">           runUpdateJobInGame(game, gamePlus, gamePlusBuilderService,</span>
-            gameRepository, farmerRepository, cowHerdRepository, ctx);
+<span class="fc" id="L53">            runUpdateJobInGame(</span>
+                game,
+                gamePlus,
+                gamePlusBuilderService,
+                gameRepository,
+                farmerRepository,
+                cowHerdRepository,
+                ctx
+            );
+<span class="fc" id="L62">        }</span>
 
-<span class="fc" id="L54">        }</span>
-
-<span class="fc" id="L56">        ctx.log(&quot;Cow health has been updated!&quot;);</span>
-<span class="fc" id="L57">    }</span>
+<span class="fc" id="L64">        ctx.log(&quot;Cow health has been updated!&quot;);</span>
+<span class="fc" id="L65">    }</span>
 
     // exposed for testing
     public static double calculateNewCowHealthUsingStrategy(
@@ -63,70 +71,121 @@ public class UpdateCowHealthJob implements JobContextConsumer {
             Farmer farmer,
             int totalCows
     ) {
-<span class="fc" id="L66">        var health = strategy.calculateNewCowHealth(gamePlus, farmer, totalCows);</span>
-<span class="fc" id="L67">        return Math.max(0, Math.min(health, 100));</span>
+<span class="fc" id="L74">        var health = strategy.calculateNewCowHealth(</span>
+            gamePlus, farmer, totalCows
+        );
+
+<span class="fc" id="L78">        return Math.max(0, Math.min(health, 100));</span>
     }
 
     public static void calculateCowDeaths(Farmer farmer, JobContext ctx) {
-<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (farmer.getCowHealth() == 0.0) {</span>
-<span class="fc" id="L72">            farmer.setCowDeaths(farmer.getCowDeaths() + farmer.getNumOfCows());</span>
-<span class="fc" id="L73">            farmer.setNumOfCows(0);</span>
-<span class="fc" id="L74">            farmer.setCowHealth(100.0);</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        if (farmer.getCowHealth() == 0.0) {</span>
+<span class="fc" id="L83">            farmer.setCowDeaths(</span>
+<span class="fc" id="L84">                farmer.getCowDeaths() + farmer.getNumOfCows()</span>
+            );
 
-<span class="fc" id="L76">            ctx.log(&quot; &quot; + farmer.getCowDeaths() + &quot; cows for this user died.&quot; );</span>
+<span class="fc" id="L87">            farmer.setNumOfCows(0);</span>
+<span class="fc" id="L88">            farmer.setCowHealth(100.0);</span>
+
+<span class="fc" id="L90">            ctx.log(</span>
+<span class="fc" id="L91">                &quot; &quot; + farmer.getCowDeaths() + &quot; cows for this user died.&quot;</span>
+            );
         }
-<span class="fc" id="L78">    }</span>
+<span class="fc" id="L94">    }</span>
 
-    public static void runUpdateJobInGame(Game game, GamePlus gamePlus, GamePlusBuilderService gamePlusBuilderService, GameRepository gameRepository, FarmerRepository farmerRepository, CowHerdRepository cowHerdRepository, JobContext ctx) {
-<span class="fc" id="L81">        ctx.log(&quot;Game &quot; + game.getName() + &quot;, degradationRate: &quot; + game.getDegradationRate() + &quot;, effectiveCapacity: &quot; + gamePlus.getEffectiveCapacity());</span>
+    public static void runUpdateJobInGame(
+            Game game,
+            GamePlus gamePlus,
+            GamePlusBuilderService gamePlusBuilderService,
+            GameRepository gameRepository,
+            FarmerRepository farmerRepository,
+            CowHerdRepository cowHerdRepository,
+            JobContext ctx
+    ) {
+<span class="fc" id="L105">        ctx.log(</span>
+<span class="fc" id="L106">            &quot;Game &quot; + game.getName()</span>
+<span class="fc" id="L107">            + &quot;, degradationRate: &quot; + game.getDegradationRate()</span>
+<span class="fc" id="L108">            + &quot;, effectiveCapacity: &quot; + gamePlus.getEffectiveCapacity()</span>
+        );
 
-<span class="fc" id="L83">            int numUsers = gameRepository.getNumUsers(game.getId()).orElseThrow(() -&gt; new RuntimeException(&quot;Error calling getNumUsers(&quot; + game.getId() + &quot;)&quot;));</span>
+<span class="fc" id="L111">        int numUsers = gameRepository.getNumUsers(game.getId())</span>
+<span class="fc" id="L112">            .orElseThrow(() -&gt; new RuntimeException(</span>
+<span class="fc" id="L113">                &quot;Error calling getNumUsers(&quot; + game.getId() + &quot;)&quot;</span>
+            ));
 
-<span class="fc bfc" id="L85" title="All 2 branches covered.">            if (numUsers==0) {</span>
-<span class="fc" id="L86">                ctx.log(&quot;No users in this game, skipping&quot;);</span>
-<span class="fc" id="L87">                return;</span>
-            }
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        if (numUsers == 0) {</span>
+<span class="fc" id="L117">            ctx.log(&quot;No users in this game, skipping&quot;);</span>
+<span class="fc" id="L118">            return;</span>
+        }
 
-<span class="fc" id="L90">            int carryingCapacity = gamePlus.getEffectiveCapacity();</span>
-<span class="fc" id="L91">            Iterable&lt;Farmer&gt; allFarmer = farmerRepository.findByGameId(game.getId());</span>
+<span class="fc" id="L121">        int carryingCapacity = gamePlus.getEffectiveCapacity();</span>
 
-<span class="fc" id="L93">            Integer totalCows = gameRepository.getNumCows(game.getId()).orElseThrow(() -&gt; new RuntimeException(&quot;Error calling getNumCows(&quot; + game.getId() + &quot;)&quot;));</span>
+<span class="fc" id="L123">        Iterable&lt;Farmer&gt; allFarmer =</span>
+<span class="fc" id="L124">            farmerRepository.findByGameId(game.getId());</span>
 
-<span class="fc bfc" id="L95" title="All 2 branches covered.">            var isAboveCapacity = totalCows &gt; carryingCapacity;</span>
-<span class="fc bfc" id="L96" title="All 2 branches covered.">            var cowHealthUpdateStrategy = isAboveCapacity ? game.getAboveCapacityHealthUpdateStrategy() : game.getBelowCapacityHealthUpdateStrategy();</span>
+<span class="fc" id="L126">        Integer totalCows = gameRepository.getNumCows(game.getId())</span>
+<span class="fc" id="L127">            .orElseThrow(() -&gt; new RuntimeException(</span>
+<span class="fc" id="L128">                &quot;Error calling getNumCows(&quot; + game.getId() + &quot;)&quot;</span>
+            ));
 
-<span class="fc bfc" id="L98" title="All 2 branches covered.">            for (Farmer farmer : allFarmer) {</span>
-<span class="fc" id="L99">                User user = farmer.getUser();</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        var isAboveCapacity = totalCows &gt; carryingCapacity;</span>
 
-<span class="fc" id="L101">                var newCowHealth = calculateNewCowHealthUsingStrategy(cowHealthUpdateStrategy, gamePlusBuilderService.toGamePlus(game), farmer, totalCows);</span>
-<span class="fc" id="L102">                ctx.log(&quot;User: &quot; + user.getFullName() + &quot;, numCows: &quot; + farmer.getNumOfCows() + &quot;, cowHealth: &quot; + farmer.getCowHealth());</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        var cowHealthUpdateStrategy = isAboveCapacity</span>
+<span class="fc" id="L134">            ? game.getAboveCapacityHealthUpdateStrategy()</span>
+<span class="fc" id="L135">            : game.getBelowCapacityHealthUpdateStrategy();</span>
 
-<span class="fc" id="L104">                double oldHealth = farmer.getCowHealth();</span>
-<span class="fc" id="L105">                farmer.setCowHealth(newCowHealth);</span>
-<span class="fc" id="L106">                calculateCowDeaths(farmer, ctx);</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        for (Farmer farmer : allFarmer) {</span>
+<span class="fc" id="L138">            User user = farmer.getUser();</span>
 
-<span class="fc" id="L108">                ctx.log(&quot; old cow health: &quot; + oldHealth + &quot;, new cow health: &quot; + farmer.getCowHealth());</span>
-<span class="fc" id="L109">                farmerRepository.save(farmer);</span>
-
-<span class="fc bfc" id="L111" title="All 2 branches covered.">                for (CowHerd herd : cowHerdRepository.findByFarmer_Id_UserIdAndFarmer_Id_GameId(</span>
-<span class="fc" id="L112">                    farmer.getUserId(), game.getId())) {</span>
-
-<span class="fc" id="L114">                Farmer herdFarmer = Farmer.builder()</span>
-<span class="fc" id="L115">                .cowHealth(herd.getCowHealth())</span>
-<span class="fc" id="L116">                .build();</span>
-
-<span class="fc" id="L118">                double newHerdHealth = calculateNewCowHealthUsingStrategy(</span>
+            // Reuse the existing GamePlus for farmer health.
+<span class="fc" id="L141">            var newCowHealth = calculateNewCowHealthUsingStrategy(</span>
                 cowHealthUpdateStrategy,
-<span class="fc" id="L120">                gamePlusBuilderService.toGamePlus(game),</span>
-                herdFarmer,
-<span class="fc" id="L122">                totalCows);</span>
+                gamePlus,
+                farmer,
+<span class="fc" id="L145">                totalCows</span>
+            );
 
-<span class="fc" id="L124">                herd.setCowHealth(newHerdHealth);</span>
-<span class="fc" id="L125">                cowHerdRepository.save(herd);</span>
-<span class="fc" id="L126">            }</span>
+<span class="fc" id="L148">            ctx.log(</span>
+<span class="fc" id="L149">                &quot;User: &quot; + user.getFullName()</span>
+<span class="fc" id="L150">                + &quot;, numCows: &quot; + farmer.getNumOfCows()</span>
+<span class="fc" id="L151">                + &quot;, cowHealth: &quot; + farmer.getCowHealth()</span>
+            );
 
-<span class="fc" id="L128">        }</span>
+<span class="fc" id="L154">            double oldHealth = farmer.getCowHealth();</span>
 
-<span class="fc" id="L130">    }</span>
+<span class="fc" id="L156">            farmer.setCowHealth(newCowHealth);</span>
+<span class="fc" id="L157">            calculateCowDeaths(farmer, ctx);</span>
+
+<span class="fc" id="L159">            ctx.log(</span>
+                &quot; old cow health: &quot; + oldHealth
+<span class="fc" id="L161">                + &quot;, new cow health: &quot; + farmer.getCowHealth()</span>
+            );
+
+<span class="fc" id="L164">            farmerRepository.save(farmer);</span>
+
+            for (CowHerd herd :
+<span class="fc bfc" id="L167" title="All 2 branches covered.">                cowHerdRepository.findByFarmer_Id_UserIdAndFarmer_Id_GameId(</span>
+<span class="fc" id="L168">                    farmer.getUserId(),</span>
+<span class="fc" id="L169">                    game.getId()</span>
+                )
+            ) {
+<span class="fc" id="L172">                Farmer herdFarmer = Farmer.builder()</span>
+<span class="fc" id="L173">                    .cowHealth(herd.getCowHealth())</span>
+<span class="fc" id="L174">                    .build();</span>
+
+                // Reuse GamePlus instead of rebuilding it per herd.
+<span class="fc" id="L177">                double newHerdHealth =</span>
+<span class="fc" id="L178">                    calculateNewCowHealthUsingStrategy(</span>
+                        cowHealthUpdateStrategy,
+                        gamePlus,
+                        herdFarmer,
+<span class="fc" id="L182">                        totalCows</span>
+                    );
+
+<span class="fc" id="L185">                herd.setCowHealth(newHerdHealth);</span>
+<span class="fc" id="L186">                cowHerdRepository.save(herd);</span>
+<span class="fc" id="L187">            }</span>
+<span class="fc" id="L188">        }</span>
+<span class="fc" id="L189">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
