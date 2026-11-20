@@ -28,7 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import edu.ucsb.cs156.happiercows.services.GamePlusBuilderService;
-
+import edu.ucsb.cs156.happiercows.errors.GameHiddenException;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -343,6 +343,10 @@ public class GameController extends ApiController {
 
         Game joinedGame = gameRepository.findById(gameId)
                 .orElseThrow(() -> new EntityNotFoundException("Game", gameId));
+
+        if (joinedGame.isHidden()) {
+            throw new GameHiddenException(gameId);
+            }
 
         if (joinedGame.getCourseId() != null && !courseAccessService.isEligibleForGame(u, joinedGame)) {
             throw new CourseAccessDeniedException(gameId);
