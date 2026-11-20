@@ -13,6 +13,7 @@ import edu.ucsb.cs156.happiercows.JobTestCase;
 import edu.ucsb.cs156.happiercows.repositories.GameRepository;
 import edu.ucsb.cs156.happiercows.repositories.FarmerRepository;
 import edu.ucsb.cs156.happiercows.repositories.UserRepository;
+import edu.ucsb.cs156.happiercows.repositories.CowHerdRepository;
 import edu.ucsb.cs156.happiercows.services.GamePlusBuilderService;
 
 @RestClientTest(UpdateCowHealthJobFactoryInd.class)
@@ -27,6 +28,9 @@ public class UpdateCowHealthJobFactoryIndTests extends JobTestCase {
 
     @MockBean
     UserRepository userRepository;
+
+    @MockBean
+    CowHerdRepository cowHerdRepository;
 
     @MockBean
     GamePlusBuilderService gamePlusBuilderService;

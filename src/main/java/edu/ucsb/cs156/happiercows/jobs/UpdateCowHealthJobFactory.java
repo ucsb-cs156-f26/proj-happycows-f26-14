@@ -3,6 +3,7 @@ package edu.ucsb.cs156.happiercows.jobs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import edu.ucsb.cs156.happiercows.repositories.CowHerdRepository;
 import edu.ucsb.cs156.happiercows.repositories.GameRepository;
 import edu.ucsb.cs156.happiercows.repositories.FarmerRepository;
 import edu.ucsb.cs156.happiercows.repositories.UserRepository;
@@ -26,9 +27,17 @@ public class UpdateCowHealthJobFactory  {
     @Autowired
     private GamePlusBuilderService gamePlusBuilderService;
 
+    @Autowired
+    private CowHerdRepository cowHerdRepository;
+
     public JobContextConsumer create() {
         log.info("gameRepository = " + gameRepository);
         log.info("farmerRepository = " + farmerRepository);
-        return new UpdateCowHealthJob(gameRepository, farmerRepository, userRepository, gamePlusBuilderService);
+        return new UpdateCowHealthJob(
+        gameRepository,
+        farmerRepository,
+        userRepository,
+        gamePlusBuilderService,
+        cowHerdRepository);
     }
 }
