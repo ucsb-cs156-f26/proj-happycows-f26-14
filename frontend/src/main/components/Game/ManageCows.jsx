@@ -29,6 +29,12 @@ const ManageCows = ({ farmer, game, setMessage, openModal }) => {
           💵 Market Cow Price: ${game?.cowPrice}
         </Card.Title>
         <Card.Title className="text-center">
+          🛒 Purchase Fee: ${game?.purchaseFee ?? 0} per cow
+        </Card.Title>
+        <Card.Title className="text-center">
+          💰 Selling Fee: ${game?.sellingFee ?? 0} per cow
+        </Card.Title>
+        <Card.Title className="text-center">
           🐮 Number of Cows: {farmer.numOfCows}
         </Card.Title>
         <Card.Title className="text-center">
@@ -72,10 +78,15 @@ const ManageCows = ({ farmer, game, setMessage, openModal }) => {
             <p>
               <b>Note:</b>
               <ul>
-                <li>Buying cows buys at the current cow price.</li>
                 <li>
-                  Selling cows sells at the current cow price multiplied by the
-                  average cow health (as a percentage.)
+                  {" "}
+                  Buying cows costs the current cow price plus the purchase fee
+                  per cow.
+                </li>
+                <li>
+                  Selling cows earns the current cow price multiplied by the
+                  average cow health (as a percentage), minus the selling fee
+                  per cow.
                 </li>
               </ul>
             </p>
