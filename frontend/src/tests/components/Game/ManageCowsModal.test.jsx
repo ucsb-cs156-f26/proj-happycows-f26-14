@@ -68,6 +68,42 @@ describe("ManageCowsModal", () => {
     expect(screen.getByText("Sell")).toBeInTheDocument();
   });
 
+  test("displays the purchase fee in the buy modal", () => {
+    render(
+      <ManageCowsModal
+        isOpen={true}
+        onClose={mockOnClose}
+        message="buy"
+        game={{ purchaseFee: 5, sellingFee: 8 }}
+        setNumber={mockSetNumber}
+      />,
+    );
+
+    expect(screen.getByText("Purchase fee:")).toBeInTheDocument();
+    expect(screen.getByText("Purchase fee:").parentElement).toHaveTextContent(
+      "$5 per cow",
+    );
+    expect(screen.queryByText("Selling fee:")).not.toBeInTheDocument();
+  });
+
+  test("displays the selling fee in the sell modal", () => {
+    render(
+      <ManageCowsModal
+        isOpen={true}
+        onClose={mockOnClose}
+        message="sell"
+        game={{ purchaseFee: 5, sellingFee: 8 }}
+        setNumber={mockSetNumber}
+      />,
+    );
+
+    expect(screen.getByText("Selling fee:")).toBeInTheDocument();
+    expect(screen.getByText("Selling fee:").parentElement).toHaveTextContent(
+      "$8 per cow",
+    );
+    expect(screen.queryByText("Purchase fee:")).not.toBeInTheDocument();
+  });
+
   test("does not render the modal when isOpen is false", () => {
     render(
       <ManageCowsModal
@@ -331,15 +367,15 @@ describe("ManageCowsModal", () => {
 
     const footer = screen.getByTestId("buy-sell-cow-modal-footer");
 
-    expect(footer).toHaveAttribute("style", "border-top: 0px;");
+    expect(footer).toHaveStyle("border-top-width: 0px");
     expect(footer.style.borderTop).toBe("0px");
-
     expect(screen.getByTestId("buy-sell-cow-modal-input")).toHaveStyle(
       "width: 20%",
     );
-    expect(screen.getByTestId("buy-sell-cow-modal-close")).toHaveStyle(
-      "color: rgb(0, 0, 0); border-color: #fff; background-color: rgb(255, 255, 255);",
-    );
+    ("border-top-width: 0px",
+      expect(screen.getByTestId("buy-sell-cow-modal-close")).toHaveStyle(
+        "color: rgb(0, 0, 0); border-color: #fff; background-color: rgb(255, 255, 255);",
+      ));
     expect(screen.getByTestId("buy-sell-cow-modal-close").style.color).toBe(
       "rgb(0, 0, 0)",
     );

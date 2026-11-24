@@ -152,13 +152,14 @@ public class FarmerControllerTests extends ControllerTestCase {
         // arrange
 
         User currentUser = currentUserService.getUser();
+        testGame.setPurchaseFee(2.50);
 
         Farmer origFarmer = getTestFarmer();
         origFarmer.setCowsBought(1);
 
         Farmer updateFarmer = getTestFarmer();
         updateFarmer.setNumOfCows(3);
-        updateFarmer.setTotalWealth(300 - (testGame.getCowPrice() * 2));
+        updateFarmer.setTotalWealth(300 - ((testGame.getCowPrice() + testGame.getPurchaseFee()) * 2));
         updateFarmer.setCowsBought(3);
 
         String expectedReturn = mapper.writeValueAsString(updateFarmer);
@@ -284,6 +285,7 @@ public class FarmerControllerTests extends ControllerTestCase {
         // arrange
 
         User currentUser = currentUserService.getUser();
+        testGame.setSellingFee(2.50);
 
         Farmer origFarmer = getTestFarmer();
         origFarmer.setCowsSold(1);
@@ -292,7 +294,7 @@ public class FarmerControllerTests extends ControllerTestCase {
 
         Farmer updatedFarmer = getTestFarmer();
         updatedFarmer.setCowHealth(50);
-        updatedFarmer.setTotalWealth(300 + (testGame.getCowPrice() * 0.5 * 2));
+        updatedFarmer.setTotalWealth(300 + ((testGame.getCowPrice() * 0.5 - testGame.getSellingFee()) * 2));
         updatedFarmer.setNumOfCows(0);
         updatedFarmer.setCowsSold(3);
 
