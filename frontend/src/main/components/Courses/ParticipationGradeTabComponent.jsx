@@ -20,9 +20,10 @@ const PAGE_SIZE_OPTIONS = [20, 50, 100, 200, 500];
 const DEFAULT_PAGE_SIZE = 20;
 const PAGE_SIZE_STORAGE_KEY = "participation-grade-page-size";
 
+// startDate/endDate are intentionally omitted: the date inputs start empty
+// on their own, and "" defaults here were mutation-testing survivors (a date
+// input sanitizes any invalid default string back to "").
 const DEFAULT_VALUES = {
-  startDate: "",
-  endDate: "",
   criterion1Weight: 40,
   criterion2Weight: 40,
   criterion2MinDays: 5,
