@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import ManageCows from "main/components/Game/ManageCows";
 import farmerFixtures from "fixtures/farmerFixtures";
 import { QueryClient, QueryClientProvider } from "react-query";
@@ -24,7 +24,7 @@ describe("ManageCows tests", () => {
   const mockOpenModal = vi.fn();
 
   test("renders without crashing", () => {
-    useParams.mockReturnValue({ userId: 1 }); // Replace with your desired mock values
+    useParams.mockReturnValue({ userId: 1 });
 
     currentUserModule.useCurrentUser.mockReturnValue({
       data: {},
@@ -43,6 +43,41 @@ describe("ManageCows tests", () => {
         />
       </QueryClientProvider>,
     );
+  });
+
+  test("displays purchase and selling fees", () => {
+    useParams.mockReturnValue({ userId: undefined });
+
+    currentUserModule.useCurrentUser.mockReturnValue({
+      data: {},
+    });
+
+    currentUserModule.hasRole.mockReturnValue(false);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ManageCows
+          farmer={farmerFixtures.oneFarmer[0]}
+          game={{
+            cowPrice: 100,
+            purchaseFee: 1,
+            sellingFee: 2,
+            milkPrice: 5,
+          }}
+          setMessage={mockSetMessage}
+          openModal={mockOpenModal}
+        />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText("🛒 Purchase Fee: $1 per cow")).toBeInTheDocument();
+    expect(screen.getByText("💰 Selling Fee: $2 per cow")).toBeInTheDocument();
+    const note = screen.getByText("Note:").parentElement;
+    const firstListItem = within(note).getByText(
+      /Buying cows costs the current cow price/,
+    );
+    expect(note.textContent).toContain("Note:");
+    expect(firstListItem.textContent).toMatch(/^ Buying cows costs/);
   });
 
   test("renders message when admin visit other pages", async () => {
